@@ -5,7 +5,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    node: "./node-v20.14.0-win-x64/node.exe",
   },
   resolve: {
     alias: {
