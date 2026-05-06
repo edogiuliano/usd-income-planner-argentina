@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "USD Income Planner Argentina",
-  description: "Planificador de ingresos USD para freelancers en Argentina",
+  title: "Calculadora de Sueldo USD",
+  description: "Calculadora de ingresos en USD para freelancers, contractors y trabajadores remotos en Argentina.",
 };
 
 export default function RootLayout({

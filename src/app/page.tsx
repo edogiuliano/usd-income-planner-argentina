@@ -60,13 +60,13 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
         <header className="text-center mb-6 md:mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-            USD Income Planner
+            Calculadora de Sueldo USD
             <span className="block text-2xl md:text-3xl font-semibold text-blue-600 mt-1">
               Argentina
             </span>
           </h1>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Planificador de ingresos USD para freelancers, contractors y remote workers
+            Calculá tus ingresos en dólares y convertí tu sueldo a pesos argentinos con cotizaciones actualizadas.
           </p>
         </header>
 
