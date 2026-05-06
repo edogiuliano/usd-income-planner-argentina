@@ -85,11 +85,11 @@ export function SummaryCards({
         return (
           <div
             key={card.label}
-            className={`p-5 rounded-xl border-2 ${colorClasses.bg} ${colorClasses.border} transition-all hover:shadow-md ${
+            className={`p-4 rounded-xl border-2 ${colorClasses.bg} ${colorClasses.border} transition-all hover:shadow-md ${
               card.highlight ? "shadow-lg" : ""
             }`}
           >
-            <div className="flex items-start justify-between mb-2">
+            <div className="flex items-start justify-between mb-1.5">
               <p className="text-sm font-medium text-gray-600">{card.label}</p>
               <span className="text-xl">{card.icon}</span>
             </div>

@@ -71,7 +71,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="paymentType" className="block text-sm font-semibold text-gray-700 mb-2">
           Tipo de pago
@@ -80,7 +80,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
           id="paymentType"
           value={paymentType}
           onChange={(e) => setPaymentType(e.target.value as PaymentType)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
         >
           <option value="minute">Por minuto</option>
           <option value="hour">Por hora</option>
@@ -104,7 +104,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             placeholder="0.00"
-            className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             required
           />
         </div>
@@ -121,13 +121,13 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
           value={hoursPerDay}
           onChange={(e) => setHoursPerDay(e.target.value)}
           placeholder="0"
-          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-3">
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
           Días libres semanales
         </label>
         <div className="grid grid-cols-7 gap-2">
@@ -138,7 +138,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
                 key={day.value}
                 type="button"
                 onClick={() => handleWeekdayToggle(day.value)}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                className={`flex flex-col items-center justify-center p-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                   isSelected
                     ? "bg-blue-500 text-white shadow-md hover:bg-blue-600"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -161,7 +161,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             required
           />
         </div>
@@ -175,7 +175,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             required
           />
         </div>
@@ -195,7 +195,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
       <button
         type="submit"
         disabled={!startDate || !endDate || new Date(endDate) < new Date(startDate)}
-        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-6 rounded-xl font-semibold text-lg hover:from-blue-700 hover:to-indigo-700 focus:ring-4 focus:ring-blue-300 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
       >
         Calcular ingresos
       </button>
