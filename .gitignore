@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+dist/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Vercel
+.vercel/
+
+# Testing
+coverage/
+
+# Node.js portable
+node-v20.19.0-win-x64/
+
+# Claude Code
+.claude/
+
+# Personal files
+Projecto 1 Prompt.txt
