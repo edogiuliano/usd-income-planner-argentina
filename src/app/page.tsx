@@ -1,15 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { IncomeForm } from "@/components/IncomeForm";
 import { SummaryCards } from "@/components/SummaryCards";
+import { RatesTable } from "@/components/RatesTable";
 import { getCycleDays } from "@/lib/dates";
 import { calculateIncome } from "@/lib/calculator";
-import type { CycleDays, IncomeResult } from "@/types";
+import { fetchExchangeRates } from "@/lib/rates";
+import type { CycleDays, IncomeResult, ExchangeRate } from "@/types";
 
 export default function Home() {
   const [cycleDays, setCycleDays] = useState<CycleDays | null>(null);
   const [incomeResult, setIncomeResult] = useState<IncomeResult | null>(null);
+  const [rates, setRates] = useState<ExchangeRate[]>([]);
+  const [isLoadingRates, setIsLoadingRates] = useState(false);
+  const [ratesError, setRatesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadRates = async () => {
+      setIsLoadingRates(true);
+      setRatesError(null);
+      try {
+        const data = await fetchExchangeRates();
+        setRates(data);
+      } catch (error) {
+        setRatesError("No se pudieron cargar las cotizaciones en este momento.");
+        console.error("Error loading rates:", error);
+      } finally {
+        setIsLoadingRates(false);
+      }
+    };
+
+    loadRates();
+  }, []);
 
   const handleCalculate = (data: {
     paymentType: "minute" | "hour" | "day" | "monthly";
@@ -70,7 +93,25 @@ export default function Home() {
               Resultados
             </h2>
             {cycleDays && incomeResult ? (
-              <SummaryCards cycleDays={cycleDays} incomeResult={incomeResult} />
+              <>
+                <SummaryCards cycleDays={cycleDays} incomeResult={incomeResult} />
+                {isLoadingRates && (
+                  <div className="mt-6 text-center text-gray-500 text-sm">
+                    Cargando cotizaciones...
+                  </div>
+                )}
+                {ratesError && (
+                  <div className="mt-6 flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-amber-700 text-sm font-medium">{ratesError}</p>
+                  </div>
+                )}
+                {!isLoadingRates && rates.length > 0 && (
+                  <RatesTable rates={rates} totalIncomeUsd={incomeResult.totalIncomeUsd} />
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -24,10 +24,17 @@ const WEEKDAYS = [
   { value: 6, label: "Sáb" },
 ];
 
+const parseNumber = (value: string): number => {
+  if (!value) return 0;
+  const normalized = value.replace(",", ".");
+  const parsed = parseFloat(normalized);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
 export function IncomeForm({ onSubmit }: IncomeFormProps) {
   const [paymentType, setPaymentType] = useState<PaymentType>("hour");
-  const [rate, setRate] = useState<number>(25);
-  const [hoursPerDay, setHoursPerDay] = useState<number>(8);
+  const [rate, setRate] = useState<string>("25");
+  const [hoursPerDay, setHoursPerDay] = useState<string>("8");
   const [freeWeekdays, setFreeWeekdays] = useState<number[]>([0, 6]);
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
@@ -42,8 +49,8 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
     e.preventDefault();
     onSubmit({
       paymentType,
-      rate,
-      hoursPerDay,
+      rate: parseNumber(rate),
+      hoursPerDay: parseNumber(hoursPerDay),
       freeWeekdays,
       startDate,
       endDate,
@@ -92,11 +99,11 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
           </span>
           <input
             id="rate"
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
-            min="0"
-            step="0.01"
+            onChange={(e) => setRate(e.target.value)}
+            placeholder="0.00"
             className="w-full pl-8 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             required
           />
@@ -109,12 +116,11 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
         </label>
         <input
           id="hoursPerDay"
-          type="number"
+          type="text"
+          inputMode="decimal"
           value={hoursPerDay}
-          onChange={(e) => setHoursPerDay(Number(e.target.value))}
-          min="0"
-          max="24"
-          step="0.5"
+          onChange={(e) => setHoursPerDay(e.target.value)}
+          placeholder="0"
           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           required
         />
@@ -125,24 +131,23 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
           Días libres semanales
         </label>
         <div className="grid grid-cols-7 gap-2">
-          {WEEKDAYS.map((day) => (
-            <label
-              key={day.value}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg cursor-pointer transition-colors ${
-                freeWeekdays.includes(day.value)
-                  ? "bg-blue-100 border-2 border-blue-500"
-                  : "bg-gray-50 border-2 border-gray-200 hover:border-gray-300"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={freeWeekdays.includes(day.value)}
-                onChange={() => handleWeekdayToggle(day.value)}
-                className="w-4 h-4 accent-blue-600"
-              />
-              <span className="text-xs font-medium text-gray-700">{day.label}</span>
-            </label>
-          ))}
+          {WEEKDAYS.map((day) => {
+            const isSelected = freeWeekdays.includes(day.value);
+            return (
+              <button
+                key={day.value}
+                type="button"
+                onClick={() => handleWeekdayToggle(day.value)}
+                className={`flex flex-col items-center justify-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                  isSelected
+                    ? "bg-blue-500 text-white shadow-md hover:bg-blue-600"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                <span className="text-sm font-semibold">{day.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
