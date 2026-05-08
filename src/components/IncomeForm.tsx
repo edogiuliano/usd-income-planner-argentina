@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { PaymentType } from "@/types";
 
 interface IncomeFormProps {
@@ -12,6 +12,15 @@ interface IncomeFormProps {
     startDate: string;
     endDate: string;
   }) => void;
+}
+
+interface FormState {
+  paymentType: PaymentType;
+  rate: string;
+  hoursPerDay: string;
+  freeWeekdays: number[];
+  startDate: string;
+  endDate: string;
 }
 
 const WEEKDAYS = [
@@ -31,13 +40,69 @@ const parseNumber = (value: string): number => {
   return isNaN(parsed) ? 0 : parsed;
 };
 
+const getDefaultDates = (): { startDate: string; endDate: string } => {
+  const now = new Date();
+  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return {
+    startDate: firstDay.toISOString().split("T")[0],
+    endDate: lastDay.toISOString().split("T")[0],
+  };
+};
+
+const getInitialFormState = (): FormState => {
+  if (typeof window === "undefined") {
+    const defaultDates = getDefaultDates();
+    return {
+      paymentType: "hour",
+      rate: "25",
+      hoursPerDay: "8",
+      freeWeekdays: [0, 6],
+      startDate: defaultDates.startDate,
+      endDate: defaultDates.endDate,
+    };
+  }
+
+  const saved = localStorage.getItem("usd-planner-form-state");
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      localStorage.removeItem("usd-planner-form-state");
+    }
+  }
+
+  const defaultDates = getDefaultDates();
+  return {
+    paymentType: "hour",
+    rate: "25",
+    hoursPerDay: "8",
+    freeWeekdays: [0, 6],
+    startDate: defaultDates.startDate,
+    endDate: defaultDates.endDate,
+  };
+};
+
 export function IncomeForm({ onSubmit }: IncomeFormProps) {
-  const [paymentType, setPaymentType] = useState<PaymentType>("hour");
-  const [rate, setRate] = useState<string>("25");
-  const [hoursPerDay, setHoursPerDay] = useState<string>("8");
-  const [freeWeekdays, setFreeWeekdays] = useState<number[]>([0, 6]);
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
+  const initialState = getInitialFormState();
+  const [paymentType, setPaymentType] = useState<PaymentType>(initialState.paymentType);
+  const [rate, setRate] = useState<string>(initialState.rate);
+  const [hoursPerDay, setHoursPerDay] = useState<string>(initialState.hoursPerDay);
+  const [freeWeekdays, setFreeWeekdays] = useState<number[]>(initialState.freeWeekdays);
+  const [startDate, setStartDate] = useState<string>(initialState.startDate);
+  const [endDate, setEndDate] = useState<string>(initialState.endDate);
+
+  useEffect(() => {
+    const formState: FormState = {
+      paymentType,
+      rate,
+      hoursPerDay,
+      freeWeekdays,
+      startDate,
+      endDate,
+    };
+    localStorage.setItem("usd-planner-form-state", JSON.stringify(formState));
+  }, [paymentType, rate, hoursPerDay, freeWeekdays, startDate, endDate]);
 
   const handleWeekdayToggle = (day: number) => {
     setFreeWeekdays((prev) =>
@@ -73,14 +138,14 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label htmlFor="paymentType" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="paymentType" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Tipo de pago
         </label>
         <select
           id="paymentType"
           value={paymentType}
           onChange={(e) => setPaymentType(e.target.value as PaymentType)}
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="minute">Por minuto</option>
           <option value="hour">Por hora</option>
@@ -90,11 +155,11 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
       </div>
 
       <div>
-        <label htmlFor="rate" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="rate" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Monto ({getRateLabel()})
         </label>
         <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-medium">
             $
           </span>
           <input
@@ -104,14 +169,14 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
             value={rate}
             onChange={(e) => setRate(e.target.value)}
             placeholder="0.00"
-            className="w-full pl-8 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full pl-8 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             required
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="hoursPerDay" className="block text-sm font-semibold text-gray-700 mb-2">
+        <label htmlFor="hoursPerDay" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Horas por día
         </label>
         <input
@@ -121,13 +186,13 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
           value={hoursPerDay}
           onChange={(e) => setHoursPerDay(e.target.value)}
           placeholder="0"
-          className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           required
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
           Días libres semanales
         </label>
         <div className="grid grid-cols-7 gap-2">
@@ -138,10 +203,11 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
                 key={day.value}
                 type="button"
                 onClick={() => handleWeekdayToggle(day.value)}
+                suppressHydrationWarning
                 className={`flex flex-col items-center justify-center p-2.5 rounded-xl cursor-pointer transition-all duration-200 ${
                   isSelected
                     ? "bg-blue-500 text-white shadow-md hover:bg-blue-600"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
               >
                 <span className="text-sm font-semibold">{day.label}</span>
@@ -153,7 +219,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="startDate" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="startDate" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Fecha de inicio
           </label>
           <input
@@ -161,13 +227,13 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             required
           />
         </div>
 
         <div>
-          <label htmlFor="endDate" className="block text-sm font-semibold text-gray-700 mb-2">
+          <label htmlFor="endDate" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
             Fecha de fin
           </label>
           <input
@@ -175,18 +241,18 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             required
           />
         </div>
       </div>
 
       {startDate && endDate && new Date(endDate) < new Date(startDate) && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <svg className="w-5 h-5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-red-700 text-sm font-medium">
+          <p className="text-red-700 dark:text-red-300 text-sm font-medium">
             La fecha de fin no puede ser anterior a la fecha de inicio.
           </p>
         </div>

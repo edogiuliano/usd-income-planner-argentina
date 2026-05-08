@@ -16,6 +16,8 @@ export default function Home() {
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [ratesError, setRatesError] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     const loadRates = async () => {
@@ -34,6 +36,42 @@ export default function Home() {
 
     loadRates();
   }, []);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("usd-planner-theme");
+    console.log("[Dark Mode] localStorage theme:", savedTheme);
+    if (savedTheme) {
+      const shouldBeDark = savedTheme === "dark";
+      console.log("[Dark Mode] Setting isDark from localStorage:", shouldBeDark);
+      setIsDark(shouldBeDark);
+    } else {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      console.log("[Dark Mode] No saved theme, using system preference:", prefersDark);
+      setIsDark(prefersDark);
+    }
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    console.log("[Dark Mode] Applying theme. isDark:", isDark);
+    if (isDark) {
+      console.log("[Dark Mode] Adding 'dark' class to html");
+      document.documentElement.classList.add("dark");
+    } else {
+      console.log("[Dark Mode] Removing 'dark' class from html");
+      document.documentElement.classList.remove("dark");
+    }
+    console.log("[Dark Mode] html classes:", document.documentElement.classList.toString());
+  }, [isDark, isMounted]);
+
+  const toggleTheme = () => {
+    const newTheme = !isDark;
+    console.log("[Dark Mode] Toggling theme. Current isDark:", isDark, "-> New isDark:", newTheme);
+    setIsDark(newTheme);
+    localStorage.setItem("usd-planner-theme", newTheme ? "dark" : "light");
+    console.log("[Dark Mode] Saved to localStorage:", newTheme ? "dark" : "light");
+  };
 
   const handleCalculate = (data: {
     paymentType: "minute" | "hour" | "day" | "monthly";
@@ -56,25 +94,42 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
-        <header className="text-center mb-6 md:mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
-            Calculadora de Sueldo USD
-            <span className="block text-2xl md:text-3xl font-semibold text-blue-600 mt-1">
-              Argentina
-            </span>
-          </h1>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-            Calculá tus ingresos en dólares y convertí tu sueldo a pesos argentinos con cotizaciones actualizadas.
-          </p>
+        <header className="flex justify-between items-start mb-6 md:mb-8">
+          <div className="text-center flex-1">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-3">
+              Calculadora de Sueldo USD
+              <span className="block text-2xl md:text-3xl font-semibold text-blue-600 dark:text-blue-400 mt-1">
+                Argentina
+              </span>
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 text-lg max-w-2xl mx-auto">
+              Calculá tus ingresos en dólares y convertí tu sueldo a pesos argentinos con cotizaciones actualizadas.
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-all border border-gray-200 dark:border-gray-600"
+            aria-label="Cambiar tema"
+          >
+            {isDark ? (
+              <svg className="w-6 h-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20" suppressHydrationWarning>
+                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20" suppressHydrationWarning>
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            )}
+          </button>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 md:p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-5 md:p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -84,10 +139,10 @@ export default function Home() {
             <IncomeForm onSubmit={handleCalculate} />
           </div>
 
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-5 md:p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <span className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-5 md:p-6">
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <span className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </span>
@@ -103,7 +158,7 @@ export default function Home() {
                 )}
                 {ratesError && (
                   <div className="mt-4 flex items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <p className="text-amber-700 text-sm font-medium">{ratesError}</p>
@@ -118,10 +173,10 @@ export default function Home() {
               </>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center">
-                <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-16 h-16 text-gray-300 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <p className="text-gray-500 text-lg">
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
                   Completa el formulario para ver los resultados
                 </p>
               </div>
@@ -129,7 +184,7 @@ export default function Home() {
           </div>
         </div>
 
-        <footer className="mt-8 text-center text-gray-500 text-sm">
+        <footer className="mt-8 text-center text-gray-500 dark:text-gray-400 text-sm">
           <p>Las cotizaciones son informativas y pueden variar. Esta herramienta no es asesoría financiera.</p>
         </footer>
       </div>

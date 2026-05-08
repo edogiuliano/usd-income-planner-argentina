@@ -30,11 +30,11 @@ export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-          <p className="text-sm font-semibold text-gray-900 mb-1">
+        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
             {payload[0].payload.name}
           </p>
-          <p className="text-lg font-bold text-emerald-700">
+          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
             {formatArs(payload[0].value)}
           </p>
         </div>
@@ -45,13 +45,13 @@ export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
 
   return (
     <div className="mt-4">
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
         Comparación de ingresos en ARS
       </h3>
       <div className="w-full h-56">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
             <XAxis
               dataKey="name"
               tick={{ fill: "#6a7282", fontSize: 12 }}
