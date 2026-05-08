@@ -50,28 +50,7 @@ const getDefaultDates = (): { startDate: string; endDate: string } => {
   };
 };
 
-const getInitialFormState = (): FormState => {
-  if (typeof window === "undefined") {
-    const defaultDates = getDefaultDates();
-    return {
-      paymentType: "hour",
-      rate: "25",
-      hoursPerDay: "8",
-      freeWeekdays: [0, 6],
-      startDate: defaultDates.startDate,
-      endDate: defaultDates.endDate,
-    };
-  }
-
-  const saved = localStorage.getItem("usd-planner-form-state");
-  if (saved) {
-    try {
-      return JSON.parse(saved);
-    } catch {
-      localStorage.removeItem("usd-planner-form-state");
-    }
-  }
-
+const getDefaultFormState = (): FormState => {
   const defaultDates = getDefaultDates();
   return {
     paymentType: "hour",
@@ -83,16 +62,66 @@ const getInitialFormState = (): FormState => {
   };
 };
 
+const isValidPaymentType = (value: unknown): value is PaymentType =>
+  value === "minute" || value === "hour" || value === "day" || value === "monthly";
+
+const normalizeSavedFormState = (value: unknown): FormState | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const saved = value as Partial<FormState>;
+  const defaultState = getDefaultFormState();
+  const freeWeekdays = Array.isArray(saved.freeWeekdays)
+    ? saved.freeWeekdays.filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
+    : defaultState.freeWeekdays;
+
+  return {
+    paymentType: isValidPaymentType(saved.paymentType) ? saved.paymentType : defaultState.paymentType,
+    rate: typeof saved.rate === "string" ? saved.rate : defaultState.rate,
+    hoursPerDay: typeof saved.hoursPerDay === "string" ? saved.hoursPerDay : defaultState.hoursPerDay,
+    freeWeekdays,
+    startDate: typeof saved.startDate === "string" ? saved.startDate : defaultState.startDate,
+    endDate: typeof saved.endDate === "string" ? saved.endDate : defaultState.endDate,
+  };
+};
+
 export function IncomeForm({ onSubmit }: IncomeFormProps) {
-  const initialState = getInitialFormState();
+  const initialState = getDefaultFormState();
   const [paymentType, setPaymentType] = useState<PaymentType>(initialState.paymentType);
   const [rate, setRate] = useState<string>(initialState.rate);
   const [hoursPerDay, setHoursPerDay] = useState<string>(initialState.hoursPerDay);
   const [freeWeekdays, setFreeWeekdays] = useState<number[]>(initialState.freeWeekdays);
   const [startDate, setStartDate] = useState<string>(initialState.startDate);
   const [endDate, setEndDate] = useState<string>(initialState.endDate);
+  const [isFormLoaded, setIsFormLoaded] = useState(false);
 
   useEffect(() => {
+    const saved = localStorage.getItem("usd-planner-form-state");
+
+    if (saved) {
+      try {
+        const savedState = normalizeSavedFormState(JSON.parse(saved));
+
+        if (savedState) {
+          setPaymentType(savedState.paymentType);
+          setRate(savedState.rate);
+          setHoursPerDay(savedState.hoursPerDay);
+          setFreeWeekdays(savedState.freeWeekdays);
+          setStartDate(savedState.startDate);
+          setEndDate(savedState.endDate);
+        }
+      } catch {
+        localStorage.removeItem("usd-planner-form-state");
+      }
+    }
+
+    setIsFormLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isFormLoaded) return;
+
     const formState: FormState = {
       paymentType,
       rate,
@@ -102,7 +131,7 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
       endDate,
     };
     localStorage.setItem("usd-planner-form-state", JSON.stringify(formState));
-  }, [paymentType, rate, hoursPerDay, freeWeekdays, startDate, endDate]);
+  }, [paymentType, rate, hoursPerDay, freeWeekdays, startDate, endDate, isFormLoaded]);
 
   const handleWeekdayToggle = (day: number) => {
     setFreeWeekdays((prev) =>

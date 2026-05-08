@@ -1,9 +1,9 @@
-import { formatArs } from "@/lib/formatters";
+import { formatCurrency } from "@/lib/formatters";
 import type { ExchangeRate } from "@/types";
 
 interface RatesTableProps {
   rates: ExchangeRate[];
-  totalIncomeUsd: number;
+  totalIncomeUsd?: number;
 }
 
 export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
@@ -11,10 +11,12 @@ export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
     return null;
   }
 
+  const shouldShowConvertedIncome = typeof totalIncomeUsd === "number";
+
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return date.toLocaleString("es-AR", {
+      return date.toLocaleString(rates[0]?.locale ?? "es-AR", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -27,48 +29,55 @@ export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
   };
 
   return (
-    <div className="mt-6">
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        Cotizaciones y conversión a ARS
+    <div className="mt-6 first:mt-0">
+      <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
+        Cotizaciones y conversión
       </h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">
+              <th className="px-3 py-2 text-left font-semibold text-gray-700 dark:text-gray-300">
                 Tipo de dólar
               </th>
-              <th className="text-right py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">
+              <th className="px-3 py-2 text-right font-semibold text-gray-700 dark:text-gray-300">
                 Compra
               </th>
-              <th className="text-right py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">
+              <th className="px-3 py-2 text-right font-semibold text-gray-700 dark:text-gray-300">
                 Venta
               </th>
-              <th className="text-right py-2 px-3 font-semibold text-gray-700 dark:text-gray-300">
-                Ingreso en ARS
-              </th>
+              {shouldShowConvertedIncome && (
+                <th className="px-3 py-2 text-right font-semibold text-gray-700 dark:text-gray-300">
+                  Ingreso convertido
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
             {rates.map((rate) => (
-              <tr key={rate.name} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <td className="py-2 px-3 text-gray-900 dark:text-white">{rate.name}</td>
-                <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
-                  {formatArs(rate.buy)}
+              <tr
+                key={rate.casa}
+                className="border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
+              >
+                <td className="px-3 py-2 text-gray-900 dark:text-white">{rate.name}</td>
+                <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
+                  {formatCurrency(rate.buy, rate.currencyCode, rate.locale)}
                 </td>
-                <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">
-                  {formatArs(rate.sell)}
+                <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
+                  {formatCurrency(rate.sell, rate.currencyCode, rate.locale)}
                 </td>
-                <td className="py-2 px-3 text-right font-semibold text-emerald-700 dark:text-emerald-400">
-                  {formatArs(totalIncomeUsd * rate.sell)}
-                </td>
+                {shouldShowConvertedIncome && (
+                  <td className="px-3 py-2 text-right font-semibold text-emerald-700 dark:text-emerald-400">
+                    {formatCurrency(totalIncomeUsd * rate.sell, rate.currencyCode, rate.locale)}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       {rates[0]?.updatedAt && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+        <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
           Actualizado: {formatDate(rates[0].updatedAt)}
         </p>
       )}

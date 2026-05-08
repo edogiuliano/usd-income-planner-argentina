@@ -1,9 +1,14 @@
 export type PaymentType = "minute" | "hour" | "day" | "monthly";
 
+export type CountryCode = "ar" | "cl" | "uy" | "mx" | "bo" | "br" | "co" | "ve";
+
 export type ExchangeRate = {
+  casa: string;
   name: string;
   buy: number;
   sell: number;
+  currencyCode: string;
+  locale: string;
   updatedAt: string;
 };
 

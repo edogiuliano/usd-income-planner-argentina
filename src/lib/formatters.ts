@@ -18,6 +18,20 @@ export function formatArs(value: number): string {
   }).format(value);
 }
 
+export function formatCurrency(
+  value: number,
+  currency = "ARS",
+  locale = "es-AR",
+): string {
+  const hasDecimals = value % 1 !== 0;
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function formatNumber(value: number): string {
   const hasDecimals = value % 1 !== 0;
   return new Intl.NumberFormat("en-US", {
