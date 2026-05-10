@@ -1,5 +1,5 @@
 {
-  "name": "projecto-dinero",
+  "name": "usd-income-planner-argentina",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -10,10 +10,18 @@
     "test": "vitest",
     "test:ui": "vitest --ui"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "usd",
+    "argentina",
+    "freelance",
+    "salary",
+    "income-planner",
+    "n8n",
+    "exchange-rates"
+  ],
+  "author": "Edo Giuliano",
   "license": "ISC",
-  "description": "",
+  "description": "USD income planner for freelancers and remote workers in Argentina, with exchange-rate conversion and an n8n monitoring workflow.",
   "dependencies": {
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",

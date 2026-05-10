@@ -1,0 +1,191 @@
+{
+  "connections": {
+    "App Status Check": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "DolarAPI Request",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Build Message": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Telegram Send",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "DolarAPI Request": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Filter Dollar Types",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Filter Dollar Types": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Build Message",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "App Status Check",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "name": "USD Salary Monitor Argentina",
+  "nodes": [
+    {
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "parameters": {},
+      "position": [250, 300],
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1
+    },
+    {
+      "id": "app-status-check",
+      "name": "App Status Check",
+      "parameters": {
+        "method": "GET",
+        "options": {},
+        "url": "https://calculadora-ingresos-usd.vercel.app/"
+      },
+      "position": [450, 300],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1
+    },
+    {
+      "id": "dolarapi-request",
+      "name": "DolarAPI Request",
+      "parameters": {
+        "method": "GET",
+        "options": {},
+        "url": "https://dolarapi.com/v1/dolares"
+      },
+      "position": [650, 300],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1
+    },
+    {
+      "id": "filter-dollar-types",
+      "name": "Filter Dollar Types",
+      "parameters": {
+        "conditions": {
+          "combinator": "or",
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.casa }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "oficial"
+            },
+            {
+              "id": "condition-2",
+              "leftValue": "={{ $json.casa }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "blue"
+            },
+            {
+              "id": "condition-3",
+              "leftValue": "={{ $json.casa }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "bolsa"
+            },
+            {
+              "id": "condition-4",
+              "leftValue": "={{ $json.casa }}",
+              "operator": {
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "cripto"
+            }
+          ],
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          }
+        }
+      },
+      "position": [850, 300],
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 1
+    },
+    {
+      "id": "build-message",
+      "name": "Build Message",
+      "parameters": {
+        "jsCode": "// Obtener datos de cotizaciones\nconst rates = $input.all();\n\n// Monto de ejemplo para conversión\nconst exampleUsd = 1000;\n\n// Obtener fecha y hora actual\nconst now = new Date();\nconst formattedDate = now.toLocaleString('es-AR', {\n  timeZone: 'America/Argentina/Buenos_Aires',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  hour: '2-digit',\n  minute: '2-digit',\n  second: '2-digit'\n});\n\n// Construir mensaje\nlet message = '📊 USD Salary Monitor Argentina\n\n';\nmessage += '✅ App Status: Online\n';\nmessage += '🔗 https://calculadora-ingresos-usd.vercel.app/\n\n';\nmessage += '💰 Cotizaciones de venta:\n\n';\n\n// Agregar cada tipo de dólar\nrates.forEach((rate) => {\n  const name = rate.json.nombre;\n  const sell = rate.json.venta;\n  const emoji = getEmoji(rate.json.casa);\n  const formattedSell = formatCurrency(sell);\n  const exampleArs = formatCurrency(sell * exampleUsd);\n  \n  message += `${emoji} ${name}: ${formattedSell} ARS\n`;\n});\n\nmessage += '\n💵 Ejemplo USD ' + formatNumber(exampleUsd) + ':\n';\n\nrates.forEach((rate) => {\n  const name = rate.json.nombre;\n  const sell = rate.json.venta;\n  const exampleArs = formatCurrency(sell * exampleUsd);\n  const shortName = getShortName(rate.json.casa);\n  \n  message += '   ' + shortName + ': ' + exampleArs + ' ARS\n';\n});\n\nmessage += '\n📅 ' + formattedDate + '\n\n';\nmessage += '⚠️ Las cotizaciones son informativas y pueden variar.';\n\n// Funciones auxiliares\nfunction getEmoji(casa) {\n  const emojis = {\n    'oficial': '🏛️',\n    'blue': '💙',\n    'bolsa': '📈',\n    'cripto': '₿'\n  };\n  return emojis[casa] || '💵';\n}\n\nfunction getShortName(casa) {\n  const names = {\n    'oficial': 'Oficial',\n    'blue': 'Blue',\n    'bolsa': 'MEP',\n    'cripto': 'Cripto'\n  };\n  return names[casa] || casa;\n}\n\nfunction formatCurrency(value) {\n  return new Intl.NumberFormat('es-AR', {\n    style: 'currency',\n    currency: 'ARS',\n    minimumFractionDigits: 0,\n    maximumFractionDigits: 0\n  }).format(value);\n}\n\nfunction formatNumber(value) {\n  return new Intl.NumberFormat('es-AR').format(value);\n}\n\n// Retornar el mensaje\nreturn [{ json: { message } }];"
+      },
+      "position": [1050, 300],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "credentials": {
+        "telegramApi": {
+          "id": "YOUR_TELEGRAM_CREDENTIAL_ID",
+          "name": "Telegram API"
+        }
+      },
+      "id": "telegram-send",
+      "name": "Telegram Send",
+      "parameters": {
+        "additionalFields": {},
+        "chatId": {
+          "__rl": true,
+          "cachedResultName": "YOUR_CHAT_ID",
+          "mode": "list",
+          "value": ""
+        },
+        "text": "={{ $json.message }}"
+      },
+      "position": [1250, 300],
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-05-06T00:00:00.000Z",
+  "versionId": "1"
+}

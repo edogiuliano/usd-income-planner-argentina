@@ -1,926 +1,171 @@
-\# USD Income Planner Argentina - spec.md
+# USD Income Planner Argentina - Spec
 
+## Objective
 
+Build a public web app for freelancers, contractors, and remote workers in Argentina who earn in USD and want to estimate income by work cycle, convert it to ARS, and compare exchange-rate scenarios.
 
-\## Objetivo
+The app should stay lightweight: one main page, no login, no database, and no paid features.
 
+## Target Users
 
+- Freelancers in Argentina who earn in USD
+- Remote contractors paid by minute, hour, day, or fixed monthly salary
+- Workers who need to plan income in USD and expenses in ARS
+- People comparing different exchange-rate types before making financial decisions
 
-Web app pública para freelancers, contractors y remote workers en Argentina que cobran en USD y quieren estimar sus ingresos por ciclo laboral, convertirlos a ARS con cotizaciones reales y visualizar un resumen simple.
+## Core Features
 
+- Select payment type: minute, hour, day, or monthly
+- Enter rate, hours per day, days off, start date, and end date
+- Calculate total days, worked days, free days, total hours, and USD income
+- Fetch exchange rates from DolarAPI-compatible endpoints
+- Convert estimated USD income into local currency using sell rates
+- Display summary cards, exchange-rate tables, and charts
+- Keep the calculator usable even if exchange-rate APIs fail
 
+## Current Stack
 
-Debe permitir calcular ingresos según:
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Recharts
+- date-fns
+- Vitest
+- DolarAPI
+- n8n for automation
+- Telegram Bot API for notifications
+- Vercel for deploy
 
+## MVP Scope
 
+The MVP is a single-page calculator with clear results and real exchange-rate data.
 
-\- pago por minuto
+Included:
 
-\- pago por hora
+- Income form
+- Date-cycle calculation
+- USD income calculation
+- Exchange-rate fetching
+- Conversion table
+- Summary cards
+- Chart
+- Responsive UI
+- Unit tests
+- Public deploy
 
-\- pago por día
+Out of scope:
 
-\- pago mensual fijo
+- Login
+- Payments
+- Multi-user SaaS features
+- Backend database
+- Financial advice
+- Complex forecasting
+- Compliance claims
 
+## Calculation Rules
 
+### Cycle Days
 
-El usuario define:
+`getCycleDays(startDate, endDate, freeWeekdays)` returns:
 
+- total days in the inclusive date range
+- worked days
+- free days
 
+If a day matches one of the selected free weekdays, it counts as a free day. Otherwise, it counts as a worked day.
 
-\- monto
+### Income
 
-\- horas por día
+`calculateIncome(input)` supports four payment types:
 
-\- días libres semanales
+- Minute: `rate * hoursPerDay * 60 * workedDays`
+- Hour: `rate * hoursPerDay * workedDays`
+- Day: `rate * workedDays`
+- Monthly: `rate`
 
-\- fecha de inicio del ciclo
+It also returns:
 
-\- fecha de fin del ciclo
+- total hours
+- average daily income
+- average hourly income
 
+## Exchange Rates
 
+Exchange rates are fetched from DolarAPI-compatible endpoints.
 
-La app muestra:
+Each normalized rate includes:
 
+- name
+- buy
+- sell
+- currency code
+- locale
+- updated timestamp
 
+The app uses the sell rate for conversion.
 
-\- días totales
+If the API fails:
 
-\- días trabajados
+- the app must not crash
+- USD calculations should still work
+- the user should see a clear error message
 
-\- días libres
+## n8n Workflow
 
-\- horas totales
+The n8n workflow is a portfolio extension of the main app.
 
-\- ingreso total USD
+It:
 
-\- equivalente ARS por tipo de dólar
+- checks that the deployed app is online
+- fetches USD exchange rates
+- filters relevant rate types
+- builds a Telegram summary
+- sends the summary through Telegram
 
-\- mini dashboard con cards y gráfico simple
+This demonstrates API integration, workflow automation, and monitoring.
 
+## Testing
 
+Tests cover:
 
-\---
+- one-day date ranges
+- inclusive start and end dates
+- weekend/free-day logic
+- invalid date ranges
+- minute/hour/day/monthly income calculations
+- zero worked days
+- zero hours per day
 
+Commands:
 
-
-\## Stack
-
-
-
-\- Next.js
-
-\- TypeScript
-
-\- Tailwind CSS
-
-\- date-fns
-
-\- Recharts
-
-\- Vitest para tests de lógica
-
-\- Deploy: Vercel
-
-
-
-\---
-
-
-
-\## MVP
-
-
-
-Una sola página, sin login y sin base de datos.
-
-
-
-NO hacer en MVP:
-
-
-
-\- login
-
-\- historial persistente
-
-\- gastos
-
-\- IA
-
-\- Telegram
-
-\- n8n
-
-\- export PDF
-
-\- backend complejo
-
-\- usuarios
-
-\- auth
-
-\- pagos
-
-
-
-Prioridad:
-
-
-
-```text
-
-calcular bien → mostrar claro → deployar
-
-Usuarios objetivo
-
-Freelancers en Argentina que cobran en USD
-
-Contractors remotos
-
-Remote workers
-
-Personas que cobran por minuto, hora, día o mensual fijo
-
-Personas que quieren planificar ingresos USD/ARS por ciclo laboral
-
-Inputs del formulario
-
-Tipo de pago
-
-Valores internos:
-
-
-
-ts
-
-"minute" | "hour" | "day" | "monthly"
-
-Labels visibles:
-
-
-
-Por minuto
-
-Por hora
-
-Por día
-
-Mensual fijo
-
-Monto
-
-Campo:
-
-
-
-ts
-
-rate: number
-
-Ejemplos:
-
-
-
-0.35 USD/min
-
-25 USD/hora
-
-120 USD/día
-
-2500 USD/mes
-
-Validación:
-
-
-
-debe ser mayor a 0
-
-Horas por día
-
-Campo:
-
-
-
-ts
-
-hoursPerDay: number
-
-Aplica principalmente a:
-
-
-
-pago por minuto
-
-pago por hora
-
-Para pago por día o mensual fijo puede usarse para calcular horas totales estimadas.
-
-
-
-Validación:
-
-
-
-no puede ser menor a 0
-
-no puede ser mayor a 24
-
-Días libres semanales
-
-Campo:
-
-
-
-ts
-
-freeWeekdays: number\[]
-
-Convención:
-
-
-
-ts
-
-0 = domingo
-
-1 = lunes
-
-2 = martes
-
-3 = miércoles
-
-4 = jueves
-
-5 = viernes
-
-6 = sábado
-
-El usuario debe poder seleccionar visualmente:
-
-
-
-Lunes
-
-Martes
-
-Miércoles
-
-Jueves
-
-Viernes
-
-Sábado
-
-Domingo
-
-Fechas del ciclo
-
-Campos:
-
-
-
-ts
-
-startDate: string
-
-endDate: string
-
-Reglas:
-
-
-
-startDate es obligatorio
-
-endDate es obligatorio
-
-endDate no puede ser anterior a startDate
-
-el rango incluye fecha de inicio y fecha de fin
-
-Cálculos
-
-Días del ciclo
-
-Función esperada:
-
-
-
-ts
-
-getCycleDays(startDate, endDate, freeWeekdays)
-
-Debe devolver:
-
-
-
-ts
-
-{
-
-&#x20; totalDays: number
-
-&#x20; workedDays: number
-
-&#x20; freeDays: number
-
-}
-
-Reglas:
-
-
-
-Contar todos los días entre startDate y endDate inclusive.
-
-Si el weekday está en freeWeekdays, cuenta como día libre.
-
-Si no está en freeWeekdays, cuenta como día trabajado.
-
-Ingreso USD
-
-Función esperada:
-
-
-
-ts
-
-calculateIncome({
-
-&#x20; paymentType,
-
-&#x20; rate,
-
-&#x20; hoursPerDay,
-
-&#x20; workedDays
-
-})
-
-Debe devolver:
-
-
-
-ts
-
-{
-
-&#x20; totalIncomeUsd: number
-
-&#x20; totalHours: number
-
-&#x20; averageDailyIncomeUsd: number
-
-&#x20; averageHourlyIncomeUsd: number
-
-}
-
-Pago por minuto
-
-text
-
-minutesPerDay = hoursPerDay \* 60
-
-dailyIncome = rate \* minutesPerDay
-
-totalIncomeUsd = dailyIncome \* workedDays
-
-Pago por hora
-
-text
-
-dailyIncome = rate \* hoursPerDay
-
-totalIncomeUsd = dailyIncome \* workedDays
-
-Pago por día
-
-text
-
-dailyIncome = rate
-
-totalIncomeUsd = rate \* workedDays
-
-Pago mensual fijo
-
-text
-
-totalIncomeUsd = rate
-
-Para pago mensual fijo:
-
-
-
-text
-
-totalHours = workedDays \* hoursPerDay
-
-averageDailyIncomeUsd = totalIncomeUsd / workedDays si workedDays > 0
-
-averageHourlyIncomeUsd = totalIncomeUsd / totalHours si totalHours > 0
-
-Cotizaciones USD/ARS
-
-Usar:
-
-
-
-text
-
-dolarapi.com
-
-Intentar obtener:
-
-
-
-oficial
-
-blue
-
-MEP
-
-cripto
-
-Formato interno:
-
-
-
-ts
-
-type ExchangeRate = {
-
-&#x20; name: string
-
-&#x20; buy: number
-
-&#x20; sell: number
-
-&#x20; updatedAt: string
-
-}
-
-Función esperada:
-
-
-
-ts
-
-fetchExchangeRates(): Promise<ExchangeRate\[]>
-
-Para conversión usar:
-
-
-
-text
-
-sell
-
-Cálculo:
-
-
-
-text
-
-incomeArs = totalIncomeUsd \* rate.sell
-
-Si la API falla:
-
-
-
-la calculadora USD debe seguir funcionando
-
-mostrar error claro
-
-no romper la app
-
-Mensaje sugerido:
-
-
-
-text
-
-No se pudieron cargar cotizaciones en este momento.
-
-UI
-
-Una sola página.
-
-
-
-Secciones:
-
-
-
-Header
-
-Formulario
-
-Resultado principal
-
-Cards resumen
-
-Tabla de cotizaciones / conversiones
-
-Gráfico de barras
-
-Disclaimer
-
-Cards resumen
-
-Mostrar:
-
-
-
-Ingreso estimado USD
-
-Equivalente ARS blue
-
-Días trabajados
-
-Días libres
-
-Horas totales
-
-Promedio por día
-
-Promedio por hora
-
-Gráfico
-
-Usar Recharts.
-
-
-
-Tipo:
-
-
-
-text
-
-Bar chart
-
-Mostrar:
-
-
-
-text
-
-Ingreso ARS por tipo de dólar
-
-Eje X:
-
-
-
-oficial
-
-blue
-
-MEP
-
-cripto
-
-Eje Y:
-
-
-
-ingreso equivalente en ARS
-
-Disclaimer
-
-Mostrar texto corto:
-
-
-
-text
-
-Las cotizaciones son informativas y pueden variar. Esta herramienta no es asesoría financiera.
-
-Estructura sugerida
-
-text
-
-usd-income-planner/
-
-&#x20; ├── README.md
-
-&#x20; ├── spec.md
-
-&#x20; ├── tasks.md
-
-&#x20; ├── .gitignore
-
-&#x20; ├── .env.example
-
-&#x20; ├── package.json
-
-&#x20; ├── next.config.ts
-
-&#x20; ├── tsconfig.json
-
-&#x20; ├── src/
-
-&#x20; │   ├── app/
-
-&#x20; │   │   ├── page.tsx
-
-&#x20; │   │   ├── layout.tsx
-
-&#x20; │   │   └── globals.css
-
-&#x20; │   ├── components/
-
-&#x20; │   │   ├── IncomeForm.tsx
-
-&#x20; │   │   ├── SummaryCards.tsx
-
-&#x20; │   │   ├── RatesTable.tsx
-
-&#x20; │   │   └── IncomeChart.tsx
-
-&#x20; │   ├── lib/
-
-&#x20; │   │   ├── calculator.ts
-
-&#x20; │   │   ├── dates.ts
-
-&#x20; │   │   ├── rates.ts
-
-&#x20; │   │   └── formatters.ts
-
-&#x20; │   └── types/
-
-&#x20; │       └── index.ts
-
-&#x20; └── tests/
-
-&#x20;     ├── calculator.test.ts
-
-&#x20;     └── dates.test.ts
-
-Funciones esperadas
-
-src/lib/dates.ts
-
-ts
-
-export function getCycleDays(
-
-&#x20; startDate: string,
-
-&#x20; endDate: string,
-
-&#x20; freeWeekdays: number\[]
-
-): {
-
-&#x20; totalDays: number
-
-&#x20; workedDays: number
-
-&#x20; freeDays: number
-
-}
-
-src/lib/calculator.ts
-
-ts
-
-export type PaymentType = "minute" | "hour" | "day" | "monthly"
-
-
-
-export function calculateIncome(input: {
-
-&#x20; paymentType: PaymentType
-
-&#x20; rate: number
-
-&#x20; hoursPerDay: number
-
-&#x20; workedDays: number
-
-}): {
-
-&#x20; totalIncomeUsd: number
-
-&#x20; totalHours: number
-
-&#x20; averageDailyIncomeUsd: number
-
-&#x20; averageHourlyIncomeUsd: number
-
-}
-
-src/lib/rates.ts
-
-ts
-
-export async function fetchExchangeRates(): Promise<ExchangeRate\[]>
-
-src/lib/formatters.ts
-
-ts
-
-export function formatUsd(value: number): string
-
-export function formatArs(value: number): string
-
-export function formatPercent(value: number): string
-
-Validaciones
-
-Mostrar errores claros si:
-
-
-
-rate <= 0
-
-hoursPerDay < 0
-
-hoursPerDay > 24
-
-falta startDate
-
-falta endDate
-
-endDate < startDate
-
-workedDays = 0
-
-Para workedDays = 0 mostrar:
-
-
-
-text
-
-No hay días trabajados en este ciclo según los días libres seleccionados.
-
-Tests mínimos
-
-dates.test.ts
-
-Casos:
-
-
-
-rango de 1 día
-
-rango con fin de semana
-
-inicio y fin inclusivos
-
-todos los días libres
-
-endDate anterior a startDate
-
-calculator.test.ts
-
-Casos:
-
-
-
-pago por minuto
-
-pago por hora
-
-pago por día
-
-mensual fijo
-
-workedDays = 0
-
-hoursPerDay = 0
-
-Criterios de éxito MVP
-
-&#x20;La app carga sin errores.
-
-&#x20;El formulario permite elegir tipo de pago.
-
-&#x20;El cálculo de días trabajados funciona.
-
-&#x20;El cálculo de ingreso USD funciona.
-
-&#x20;Se muestran cotizaciones reales si la API responde.
-
-&#x20;Si la API falla, la app no se rompe.
-
-&#x20;Se muestra mini dashboard.
-
-&#x20;Se muestra gráfico simple.
-
-&#x20;UI responsive básica.
-
-&#x20;Se puede deployar en Vercel.
-
-&#x20;README tiene instrucciones claras.
-
-&#x20;No hay login ni features fuera del MVP.
-
-Roadmap post-MVP
-
-v2: Historial local
-
-Guardar cálculos en localStorage.
-
-Mostrar últimos cálculos.
-
-Comparar ciclos.
-
-v3: Gastos mensuales
-
-Agregar gastos manuales:
-
-
-
-alquiler
-
-comida
-
-servicios
-
-transporte
-
-suscripciones
-
-otros
-
-Calcular:
-
-
-
-ingreso neto después de gastos
-
-porcentaje de ahorro
-
-gastos en USD/ARS
-
-v4: Google Sheets / n8n
-
-Exportar cálculo a Google Sheets.
-
-Workflow n8n diario para actualizar cotizaciones.
-
-Telegram alert con resumen.
-
-v5: Backend y usuarios
-
-login
-
-base de datos
-
-histórico real por usuario
-
-reportes mensuales
-
-Restricciones
-
-No implementar login en MVP.
-
-No implementar base de datos en MVP.
-
-No implementar gastos en MVP.
-
-No implementar IA en MVP.
-
-No implementar Telegram/n8n en MVP.
-
-No agregar complejidad innecesaria.
-
-Mantener funciones de cálculo separadas de componentes React.
-
-Priorizar claridad y demo funcional.
-
-Comandos esperados
-
-Instalación:
-
-
-
-bash
-
-npm install
-
-Desarrollo:
-
-
-
-bash
-
-npm run dev
-
-Tests:
-
-
-
-bash
-
+```bash
 npm test
-
-Build:
-
-
-
-bash
-
 npm run build
+```
 
+## Success Criteria
+
+- The app loads without errors.
+- The form calculates income correctly.
+- Exchange rates load when the API is available.
+- API failures are handled without breaking the app.
+- Tests pass.
+- Production build succeeds.
+- README clearly explains the project, setup, stack, automation, and limitations.
+- No secrets or credentials are committed.
+
+## Portfolio Angle
+
+This project should be presented as a practical automation and web tooling project:
+
+- real user problem
+- public deployed app
+- API integration
+- test-covered calculation logic
+- n8n workflow
+- Telegram automation
+- clear roadmap and limitations
+
+It is not a financial product and should not be described as financial advice.

@@ -22,6 +22,8 @@ node-v20.19.0-win-x64/
 
 # Claude Code
 .claude/
+.codex/
+AGENTS.md
 
 # Personal files
 Projecto 1 Prompt.txt
