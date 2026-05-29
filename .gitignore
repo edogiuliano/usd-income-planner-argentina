@@ -17,6 +17,9 @@ dist/
 # Testing
 coverage/
 
+# Local dev logs
+.codex-dev-server.*.log
+
 # Node.js portable
 node-v20.19.0-win-x64/
 

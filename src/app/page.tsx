@@ -8,7 +8,7 @@ import { SummaryCards } from "@/components/SummaryCards";
 import { calculateIncome } from "@/lib/calculator";
 import { getCycleDays } from "@/lib/dates";
 import { fetchExchangeRates } from "@/lib/rates";
-import type { CountryCode, CycleDays, ExchangeRate, IncomeResult } from "@/types";
+import type { CountryCode, CycleDays, ExchangeRate, IncomeResult, TimeOffDays } from "@/types";
 
 const COUNTRIES: Array<{ code: CountryCode; name: string; flag: string }> = [
   { code: "ar", name: "Argentina", flag: "🇦🇷" },
@@ -96,15 +96,19 @@ export default function Home() {
     rate: number;
     hoursPerDay: number;
     freeWeekdays: number[];
+    timeOffDays: TimeOffDays;
     startDate: string;
     endDate: string;
   }) => {
-    const days = getCycleDays(data.startDate, data.endDate, data.freeWeekdays);
+    const days = getCycleDays(data.startDate, data.endDate, data.freeWeekdays, data.timeOffDays);
     const income = calculateIncome({
       paymentType: data.paymentType,
       rate: data.rate,
       hoursPerDay: data.hoursPerDay,
       workedDays: days.workedDays,
+      scheduledWorkDays: days.scheduledWorkDays,
+      paidLeaveDays: days.ptoDays,
+      unpaidLeaveDays: days.vtoDays,
     });
 
     setCycleDays(days);
@@ -116,7 +120,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 transition-colors dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 md:py-6 lg:px-8">
+      <div className="mx-auto w-full max-w-[1800px] px-4 py-4 sm:px-6 md:py-6 2xl:px-10">
         <header className="mb-6 flex flex-col gap-4 md:mb-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex-1 text-center">
             <h1 className="mb-3 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
@@ -165,8 +169,8 @@ export default function Home() {
           </div>
         </header>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(470px,1.25fr)_minmax(400px,1fr)_minmax(390px,1fr)] 2xl:grid-cols-[minmax(560px,1.3fr)_minmax(460px,1fr)_minmax(460px,1fr)] xl:gap-7">
+          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6 xl:sticky xl:top-6 xl:self-start">
             <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
               <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
                 <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
@@ -206,46 +210,46 @@ export default function Home() {
               </div>
             )}
           </div>
+
+          <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6 xl:sticky xl:top-6 xl:self-start">
+            <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900">
+                <svg className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l6-6 4 4 8-8" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 7h7v7" />
+                </svg>
+              </span>
+              Cotizaciones
+            </h2>
+
+            {isLoadingRates && (
+              <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                Cargando cotizaciones...
+              </div>
+            )}
+
+            {ratesError && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
+                <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
+                  {ratesError}
+                </p>
+              </div>
+            )}
+
+            {!isLoadingRates && !ratesError && rates.length > 0 && <RatesTable rates={rates} />}
+
+            {selectedCountry === "ar" ? (
+              <RateHistoryChart />
+            ) : (
+              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
+                Historial disponible solo para Argentina por ahora
+              </div>
+            )}
+          </section>
         </div>
-
-        <section className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6">
-          <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900">
-              <svg className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l6-6 4 4 8-8" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 7h7v7" />
-              </svg>
-            </span>
-            Cotizaciones
-          </h2>
-
-          {isLoadingRates && (
-            <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
-              Cargando cotizaciones...
-            </div>
-          )}
-
-          {ratesError && (
-            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
-              <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                {ratesError}
-              </p>
-            </div>
-          )}
-
-          {!isLoadingRates && !ratesError && rates.length > 0 && <RatesTable rates={rates} />}
-
-          {selectedCountry === "ar" ? (
-            <RateHistoryChart />
-          ) : (
-            <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
-              Historial disponible solo para Argentina por ahora
-            </div>
-          )}
-        </section>
 
         <footer className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Las cotizaciones son informativas y pueden variar. Esta herramienta no es asesoría financiera.</p>

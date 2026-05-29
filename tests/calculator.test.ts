@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { calculateIncome } from "../src/lib/calculator";
 
 describe("calculateIncome", () => {
@@ -11,6 +11,8 @@ describe("calculateIncome", () => {
     });
 
     expect(result.totalIncomeUsd).toBe(1200);
+    expect(result.baseIncomeUsd).toBe(1200);
+    expect(result.unpaidLeaveDeductionUsd).toBe(0);
     expect(result.totalHours).toBe(40);
     expect(result.averageDailyIncomeUsd).toBe(240);
     expect(result.averageHourlyIncomeUsd).toBe(30);
@@ -50,6 +52,7 @@ describe("calculateIncome", () => {
       rate: 2500,
       hoursPerDay: 8,
       workedDays: 20,
+      scheduledWorkDays: 20,
     });
 
     expect(result.totalIncomeUsd).toBe(2500);
@@ -98,5 +101,56 @@ describe("calculateIncome", () => {
     expect(result.totalHours).toBe(0);
     expect(result.averageDailyIncomeUsd).toBe(200);
     expect(result.averageHourlyIncomeUsd).toBe(0);
+  });
+
+  it("should pay PTO days without adding worked hours", () => {
+    const result = calculateIncome({
+      paymentType: "hour",
+      rate: 25,
+      hoursPerDay: 8,
+      workedDays: 4,
+      paidLeaveDays: 1,
+    });
+
+    expect(result.totalIncomeUsd).toBe(1000);
+    expect(result.totalHours).toBe(32);
+    expect(result.paidDays).toBe(5);
+    expect(result.paidLeaveDays).toBe(1);
+    expect(result.averageDailyIncomeUsd).toBe(200);
+    expect(result.averageHourlyIncomeUsd).toBe(31.25);
+  });
+
+  it("should prorate monthly income when VTO is unpaid", () => {
+    const result = calculateIncome({
+      paymentType: "monthly",
+      rate: 2500,
+      hoursPerDay: 8,
+      workedDays: 18,
+      scheduledWorkDays: 20,
+      unpaidLeaveDays: 2,
+    });
+
+    expect(result.totalIncomeUsd).toBe(2250);
+    expect(result.baseIncomeUsd).toBe(2500);
+    expect(result.unpaidLeaveDeductionUsd).toBe(250);
+    expect(result.totalHours).toBe(144);
+    expect(result.paidDays).toBe(18);
+    expect(result.unpaidLeaveDays).toBe(2);
+  });
+
+  it("should show the exact VTO discount for hourly rates", () => {
+    const result = calculateIncome({
+      paymentType: "hour",
+      rate: 25,
+      hoursPerDay: 8,
+      workedDays: 18,
+      scheduledWorkDays: 20,
+      unpaidLeaveDays: 2,
+    });
+
+    expect(result.baseIncomeUsd).toBe(4000);
+    expect(result.unpaidLeaveDeductionUsd).toBe(400);
+    expect(result.totalIncomeUsd).toBe(3600);
+    expect(result.totalHours).toBe(144);
   });
 });

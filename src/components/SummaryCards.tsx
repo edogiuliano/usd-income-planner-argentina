@@ -1,4 +1,4 @@
-import { formatUsd, formatNumber } from "@/lib/formatters";
+import { formatNumber, formatUsd } from "@/lib/formatters";
 import type { CycleDays, IncomeResult } from "@/types";
 
 interface SummaryCardsProps {
@@ -6,10 +6,7 @@ interface SummaryCardsProps {
   incomeResult: IncomeResult;
 }
 
-export function SummaryCards({
-  cycleDays,
-  incomeResult,
-}: SummaryCardsProps) {
+export function SummaryCards({ cycleDays, incomeResult }: SummaryCardsProps) {
   const cards = [
     {
       label: "Días totales",
@@ -18,17 +15,31 @@ export function SummaryCards({
       color: "blue",
     },
     {
-      label: "Días trabajados",
-      value: formatNumber(cycleDays.workedDays),
-      icon: "💼",
-      color: "green",
-    },
-    {
       label: "Días libres",
       value: formatNumber(cycleDays.freeDays),
       icon: "🏖️",
       color: "purple",
     },
+    ...(cycleDays.vtoDays > 0
+      ? [
+          {
+            label: "VTO",
+            value: formatNumber(cycleDays.vtoDays),
+            icon: "🚫",
+            color: "amber",
+          },
+        ]
+      : []),
+    ...(cycleDays.ptoDays > 0
+      ? [
+          {
+            label: "PTO",
+            value: formatNumber(cycleDays.ptoDays),
+            icon: "🌴",
+            color: "cyan",
+          },
+        ]
+      : []),
     {
       label: "Horas totales",
       value: formatNumber(incomeResult.totalHours),
@@ -56,8 +67,11 @@ export function SummaryCards({
     },
   ];
 
-  const getColorClasses = (color: string, highlight: boolean = false) => {
-    const colors: Record<string, { bg: string; border: string; text: string; darkBg: string; darkBorder: string; darkText: string }> = {
+  const getColorClasses = (color: string, highlight = false) => {
+    const colors: Record<
+      string,
+      { bg: string; border: string; text: string; darkBg: string; darkBorder: string; darkText: string }
+    > = {
       blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", darkBg: "dark:bg-blue-900/30", darkBorder: "dark:border-blue-700", darkText: "dark:text-blue-300" },
       green: { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", darkBg: "dark:bg-green-900/30", darkBorder: "dark:border-green-700", darkText: "dark:text-green-300" },
       purple: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", darkBg: "dark:bg-purple-900/30", darkBorder: "dark:border-purple-700", darkText: "dark:text-purple-300" },
@@ -82,21 +96,21 @@ export function SummaryCards({
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
       {cards.map((card) => {
         const colorClasses = getColorClasses(card.color, card.highlight);
         return (
           <div
             key={card.label}
-            className={`p-4 rounded-xl border-2 ${colorClasses.bg} ${colorClasses.darkBg} ${colorClasses.border} ${colorClasses.darkBorder} transition-all hover:shadow-md ${
+            className={`rounded-xl border-2 p-3 ${colorClasses.bg} ${colorClasses.darkBg} ${colorClasses.border} ${colorClasses.darkBorder} transition-all hover:shadow-md ${
               card.highlight ? "shadow-lg" : ""
             }`}
           >
-            <div className="flex items-start justify-between mb-1.5">
+            <div className="mb-1.5 flex items-start justify-between gap-2">
               <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{card.label}</p>
-              <span className="text-xl">{card.icon}</span>
+              <span className="text-xl leading-none">{card.icon}</span>
             </div>
-            <p className={`text-2xl md:text-3xl font-bold ${colorClasses.text} ${colorClasses.darkText}`}>
+            <p className={`text-2xl font-bold ${colorClasses.text} ${colorClasses.darkText}`}>
               {card.value}
             </p>
           </div>
