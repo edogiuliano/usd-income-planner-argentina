@@ -222,16 +222,11 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
               inputMode="decimal"
               value={rate}
               onChange={(event) => setRate(event.target.value)}
-              placeholder={paymentType === "monthly" ? "1.500,50" : "0.00"}
+              placeholder={paymentType === "monthly" ? "Usá comas para decimales" : "0.00"}
               className="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-8 pr-4 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
-          {paymentType === "monthly" && (
-            <p className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
-              UsÃ¡ coma para decimales. El punto se toma como separador de miles: 1.500,50 = 1500.50.
-            </p>
-          )}
         </div>
 
         <div>
