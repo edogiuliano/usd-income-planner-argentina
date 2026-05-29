@@ -9,6 +9,8 @@ const PUBLIC_URL = "https://calculadora-ingresos-usd.vercel.app/";
 const SHARE_TEXT =
   "Estoy usando esta calculadora para convertir mi sueldo en USD a pesos y ver cotizaciones actualizadas.";
 const FULL_SHARE_TEXT = `${SHARE_TEXT} ${PUBLIC_URL}`;
+const NUDGE_INTERVAL_MS = 10 * 60 * 1000;
+const NUDGE_VISIBLE_MS = 5 * 1000;
 
 function IconMessage() {
   return (
@@ -113,19 +115,32 @@ export function FeedbackShareDock() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const firstNudge = window.setTimeout(() => {
-      setShowNudge(true);
-    }, 7000);
+    if (isWidgetOpen) {
+      return;
+    }
 
     const nudgeInterval = window.setInterval(() => {
-      setShowNudge((current) => (isWidgetOpen ? current : true));
-    }, 45000);
+      setShowNudge(true);
+    }, NUDGE_INTERVAL_MS);
 
     return () => {
-      window.clearTimeout(firstNudge);
       window.clearInterval(nudgeInterval);
     };
   }, [isWidgetOpen]);
+
+  useEffect(() => {
+    if (!showNudge) {
+      return;
+    }
+
+    const hideNudge = window.setTimeout(() => {
+      setShowNudge(false);
+    }, NUDGE_VISIBLE_MS);
+
+    return () => {
+      window.clearTimeout(hideNudge);
+    };
+  }, [showNudge]);
 
   useEffect(() => {
     if (isWidgetOpen) {
