@@ -6,7 +6,6 @@ import { IncomeForm } from "@/components/IncomeForm";
 import { RateHistoryChart } from "@/components/RateHistoryChart";
 import { RatesTable } from "@/components/RatesTable";
 import { SummaryCards } from "@/components/SummaryCards";
-import { WhatsAppAlertSignup } from "@/components/WhatsAppAlertSignup";
 import { calculateIncome } from "@/lib/calculator";
 import { getCycleDays } from "@/lib/dates";
 import { fetchExchangeRates } from "@/lib/rates";
@@ -242,8 +241,6 @@ export default function Home() {
             )}
 
             {!isLoadingRates && !ratesError && rates.length > 0 && <RatesTable rates={rates} />}
-
-            <WhatsAppAlertSignup countryCode={selectedCountry} />
 
             {selectedCountry === "ar" ? (
               <RateHistoryChart />
