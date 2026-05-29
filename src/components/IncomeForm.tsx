@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { parseDayCountInput, parseMoneyInput, parseNumberInput } from "@/lib/inputNumbers";
 import type { PaymentType, TimeOffDays } from "@/types";
 
 interface IncomeFormProps {
@@ -34,15 +35,6 @@ const WEEKDAYS = [
   { value: 5, label: "Vie" },
   { value: 6, label: "Sáb" },
 ];
-
-const parseNumber = (value: string): number => {
-  if (!value) return 0;
-  const normalized = value.replace(",", ".");
-  const parsed = parseFloat(normalized);
-  return Number.isNaN(parsed) ? 0 : parsed;
-};
-
-const parseDayCount = (value: string): number => Math.max(Math.trunc(parseNumber(value)), 0);
 
 const getDefaultDates = (): { startDate: string; endDate: string } => {
   const now = new Date();
@@ -118,8 +110,8 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
   const [isFormLoaded, setIsFormLoaded] = useState(false);
 
   const timeOffDays = {
-    vtoDays: parseDayCount(vtoDays),
-    ptoDays: parseDayCount(ptoDays),
+    vtoDays: parseDayCountInput(vtoDays),
+    ptoDays: parseDayCountInput(ptoDays),
   };
   const hasTimeOff = timeOffDays.vtoDays > 0 || timeOffDays.ptoDays > 0;
 
@@ -174,8 +166,8 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
     event.preventDefault();
     onSubmit({
       paymentType,
-      rate: parseNumber(rate),
-      hoursPerDay: parseNumber(hoursPerDay),
+      rate: parseMoneyInput(rate, paymentType),
+      hoursPerDay: parseNumberInput(hoursPerDay),
       freeWeekdays,
       timeOffDays,
       startDate,
@@ -230,11 +222,16 @@ export function IncomeForm({ onSubmit }: IncomeFormProps) {
               inputMode="decimal"
               value={rate}
               onChange={(event) => setRate(event.target.value)}
-              placeholder="0.00"
+              placeholder={paymentType === "monthly" ? "1.500,50" : "0.00"}
               className="w-full rounded-xl border border-gray-300 bg-white py-2.5 pl-8 pr-4 text-gray-900 transition-colors focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               required
             />
           </div>
+          {paymentType === "monthly" && (
+            <p className="mt-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-medium text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200">
+              UsÃ¡ coma para decimales. El punto se toma como separador de miles: 1.500,50 = 1500.50.
+            </p>
+          )}
         </div>
 
         <div>

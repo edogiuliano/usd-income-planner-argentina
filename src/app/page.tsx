@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FeedbackShareDock } from "@/components/FeedbackShareDock";
 import { IncomeForm } from "@/components/IncomeForm";
 import { RateHistoryChart } from "@/components/RateHistoryChart";
 import { RatesTable } from "@/components/RatesTable";
 import { SummaryCards } from "@/components/SummaryCards";
+import { WhatsAppAlertSignup } from "@/components/WhatsAppAlertSignup";
 import { calculateIncome } from "@/lib/calculator";
 import { getCycleDays } from "@/lib/dates";
 import { fetchExchangeRates } from "@/lib/rates";
@@ -119,7 +121,7 @@ export default function Home() {
     COUNTRIES.find((country) => country.code === selectedCountry) ?? COUNTRIES[0];
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 transition-colors dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24 transition-colors dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="mx-auto w-full max-w-[1800px] px-4 py-4 sm:px-6 md:py-6 2xl:px-10">
         <header className="mb-6 flex flex-col gap-4 md:mb-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex-1 text-center">
@@ -241,6 +243,8 @@ export default function Home() {
 
             {!isLoadingRates && !ratesError && rates.length > 0 && <RatesTable rates={rates} />}
 
+            <WhatsAppAlertSignup countryCode={selectedCountry} />
+
             {selectedCountry === "ar" ? (
               <RateHistoryChart />
             ) : (
@@ -255,6 +259,7 @@ export default function Home() {
           <p>Las cotizaciones son informativas y pueden variar. Esta herramienta no es asesoría financiera.</p>
         </footer>
       </div>
+      <FeedbackShareDock />
     </main>
   );
 }

@@ -1,0 +1,166 @@
+{
+  "name": "USD Planner Feedback to Google Sheets",
+  "id": "usdPlannerFeedbackToSheets",
+  "nodes": [
+    {
+      "id": "feedback-webhook",
+      "name": "Feedback Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 260],
+      "webhookId": "usd-planner-feedback",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "usd-planner-feedback",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "map-feedback",
+      "name": "Map Feedback",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [500, 260],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "submittedAt",
+              "name": "submittedAt",
+              "type": "string",
+              "value": "={{ $json.body?.submittedAt ?? $json.submittedAt ?? $now.toISO() }}"
+            },
+            {
+              "id": "feedback",
+              "name": "feedback",
+              "type": "string",
+              "value": "={{ $json.body?.feedback ?? $json.feedback ?? '' }}"
+            },
+            {
+              "id": "contact",
+              "name": "contact",
+              "type": "string",
+              "value": "={{ $json.body?.contact ?? $json.contact ?? '' }}"
+            },
+            {
+              "id": "pageUrl",
+              "name": "pageUrl",
+              "type": "string",
+              "value": "={{ $json.body?.pageUrl ?? $json.pageUrl ?? '' }}"
+            },
+            {
+              "id": "source",
+              "name": "source",
+              "type": "string",
+              "value": "={{ $json.body?.source ?? $json.source ?? 'web' }}"
+            },
+            {
+              "id": "userAgent",
+              "name": "userAgent",
+              "type": "string",
+              "value": "={{ $json.body?.userAgent ?? $json.userAgent ?? '' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "append-feedback-row",
+      "name": "Google Sheets Append Feedback",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [760, 260],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1zOJ-7njbL8uUMEyKBrenue6Gov-e6cBvgZqi9he3MSk",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "0",
+          "mode": "id"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": null,
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "H3lnfPeEwisTX5DR",
+          "name": "Google Sheets account 2"
+        }
+      },
+      "notes": "Appends feedback to the first tab in Edo's Google Sheets workbook."
+    },
+    {
+      "id": "respond-feedback",
+      "name": "Respond Feedback",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1020, 260],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, message: 'Feedback guardado.' } }}",
+        "options": {
+          "responseCode": 200
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Feedback Webhook": {
+      "main": [
+        [
+          {
+            "node": "Map Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Feedback": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets Append Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Append Feedback": {
+      "main": [
+        [
+          {
+            "node": "Respond Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-05-29T00:00:00.000Z",
+  "versionId": "1"
+}

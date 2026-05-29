@@ -1,0 +1,177 @@
+{
+  "name": "WhatsApp Dollar Alerts Argentina",
+  "id": "usdPlannerWhatsappAlerts",
+  "nodes": [
+    {
+      "id": "subscribe-webhook",
+      "name": "Subscribe Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 220],
+      "webhookId": "usd-planner-whatsapp-alerts",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "usd-planner-whatsapp-alerts",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "store-subscriber",
+      "name": "Store Subscriber",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 220],
+      "parameters": {
+        "jsCode": "const body = $json.body ?? $json;\nconst phone = String(body.phone ?? '').replace(/[^\\d+]/g, '');\n\nif (!phone || phone.length < 8) {\n  return [{ json: { ok: false, statusCode: 400, message: 'Número inválido.' } }];\n}\n\nconst staticData = $getWorkflowStaticData('global');\nstaticData.subscribers = Array.isArray(staticData.subscribers) ? staticData.subscribers : [];\n\nconst existing = staticData.subscribers.find((subscriber) => subscriber.phone === phone);\n\nif (existing) {\n  existing.updatedAt = new Date().toISOString();\n  existing.active = true;\n} else {\n  staticData.subscribers.push({\n    phone,\n    country: 'ar',\n    market: 'cripto',\n    active: true,\n    createdAt: new Date().toISOString(),\n    updatedAt: new Date().toISOString(),\n  });\n}\n\nreturn [{\n  json: {\n    ok: true,\n    statusCode: 200,\n    message: 'Suscripción registrada para alertas de dólar cripto.',\n    subscribers: staticData.subscribers.length,\n  }\n}];"
+      }
+    },
+    {
+      "id": "respond-subscribe",
+      "name": "Respond Subscribe",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [760, 220],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": "={{ $json.statusCode || 200 }}"
+        }
+      }
+    },
+    {
+      "id": "schedule-trigger",
+      "name": "Every 2 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 560],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "argentina-datos-history",
+      "name": "ArgentinaDatos Cripto History",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [500, 560],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.argentinadatos.com/v1/cotizaciones/dolares/cripto",
+        "options": {}
+      }
+    },
+    {
+      "id": "check-monthly-high",
+      "name": "Check Monthly High",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 560],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nconst subscribers = (staticData.subscribers ?? []).filter((subscriber) => subscriber.active && subscriber.country === 'ar');\n\nif (subscribers.length === 0) {\n  return [];\n}\n\nconst rows = $input.all().map((item) => item.json);\nconst cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);\nconst recent = rows\n  .map((row) => ({ ...row, date: new Date(row.fecha) }))\n  .filter((row) => row.date >= cutoff && Number.isFinite(Number(row.venta)))\n  .sort((a, b) => a.date.getTime() - b.date.getTime());\n\nif (recent.length === 0) {\n  return [];\n}\n\nconst latest = recent[recent.length - 1];\nconst maxSell = Math.max(...recent.map((row) => Number(row.venta)));\nconst latestSell = Number(latest.venta);\nconst latestDateKey = latest.date.toISOString().slice(0, 10);\nconst alertKey = `${latestDateKey}-${latestSell}`;\n\nif (latestSell < maxSell || staticData.lastMonthlyHighAlertKey === alertKey) {\n  return [];\n}\n\nstaticData.lastMonthlyHighAlertKey = alertKey;\n\nconst formattedRate = new Intl.NumberFormat('es-AR', {\n  style: 'currency',\n  currency: 'ARS',\n  maximumFractionDigits: 2,\n}).format(latestSell);\n\nconst message = `🚨 Dólar cripto en máximo de 30 días\\n\\nVenta actual: ${formattedRate}\\nFecha: ${latestDateKey}\\n\\nCalculadora de Sueldo USD`;\n\nreturn subscribers.map((subscriber) => ({\n  json: {\n    phone: subscriber.phone,\n    message,\n    latestSell,\n    latestDateKey,\n  }\n}));"
+      }
+    },
+    {
+      "id": "send-whatsapp-cloud-api",
+      "name": "Send WhatsApp Cloud API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1020, 560],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$env.WHATSAPP_ACCESS_TOKEN}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{$json.phone}}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"preview_url\": false,\n    \"body\": \"{{$json.message}}\"\n  }\n}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Subscribe Webhook": {
+      "main": [
+        [
+          {
+            "node": "Store Subscriber",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Subscriber": {
+      "main": [
+        [
+          {
+            "node": "Respond Subscribe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Every 2 Hours": {
+      "main": [
+        [
+          {
+            "node": "ArgentinaDatos Cripto History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ArgentinaDatos Cripto History": {
+      "main": [
+        [
+          {
+            "node": "Check Monthly High",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Monthly High": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Cloud API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-05-29T00:00:00.000Z",
+  "versionId": "1"
+}
