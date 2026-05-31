@@ -24,38 +24,7 @@ The workflow:
 automation/n8n/
   README.md
   usd-salary-monitor.workflow.json
-  feedback-to-google-sheets.workflow.json
 ```
-
-## Feedback to Google Sheets
-
-`feedback-to-google-sheets.workflow.json` adds the v4.5 feedback automation:
-
-1. Receives feedback from the bottom dock in the web app.
-2. Maps the comment, optional contact, page URL, source, user agent, and timestamp.
-3. Appends a row to the first Google Sheets tab (`gid=0`).
-4. Responds to the web app with a success message.
-
-### Web App Environment Variable
-
-Set this variable in Vercel or `.env.local`:
-
-```text
-N8N_FEEDBACK_WEBHOOK_URL=https://YOUR_N8N_DOMAIN/webhook/usd-planner-feedback
-```
-
-If the variable is missing, the app accepts the form in demo mode but does not save to Google Sheets.
-
-### Google Sheets Setup
-
-1. Create a Google Sheet and keep the feedback destination tab as the first tab (`gid=0`).
-2. Suggested columns: `submittedAt`, `feedback`, `contact`, `pageUrl`, `source`, `userAgent`.
-3. Import `feedback-to-google-sheets.workflow.json` into n8n.
-4. Confirm the Google Sheets node points to your target workbook.
-5. Bind or confirm your Google Sheets credential in n8n.
-6. Activate the workflow.
-7. Copy the production webhook URL from the `Feedback Webhook` node.
-8. Paste that URL into `N8N_FEEDBACK_WEBHOOK_URL`.
 
 ## Importing the Workflow
 

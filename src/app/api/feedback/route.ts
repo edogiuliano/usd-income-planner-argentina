@@ -39,20 +39,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const webhookUrl = process.env.N8N_FEEDBACK_WEBHOOK_URL;
+  const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_FEEDBACK_URL;
 
-  if (!webhookUrl) {
+  if (!appsScriptUrl) {
     return NextResponse.json(
       {
         message:
-          "Feedback recibido en modo demo. Configura N8N_FEEDBACK_WEBHOOK_URL para guardarlo en Google Sheets.",
+          "Feedback recibido en modo demo. Configura GOOGLE_APPS_SCRIPT_FEEDBACK_URL para guardarlo en Google Sheets.",
         demo: true,
       },
       { status: 202 },
     );
   }
 
-  const response = await fetch(webhookUrl, {
+  const response = await fetch(appsScriptUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -72,6 +72,26 @@ export async function POST(request: Request) {
       { error: "No se pudo guardar el feedback en este momento." },
       { status: 502 },
     );
+  }
+
+  const responseText = await response.text();
+
+  if (responseText) {
+    try {
+      const data = JSON.parse(responseText) as { ok?: boolean };
+
+      if (data.ok === false) {
+        return NextResponse.json(
+          { error: "No se pudo guardar el feedback en Google Sheets." },
+          { status: 502 },
+        );
+      }
+    } catch {
+      return NextResponse.json(
+        { error: "Google Apps Script devolvio una respuesta invalida." },
+        { status: 502 },
+      );
+    }
   }
 
   return NextResponse.json({
