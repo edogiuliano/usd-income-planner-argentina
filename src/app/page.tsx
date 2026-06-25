@@ -1,43 +1,160 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AppHud } from "@/components/AppHud";
+import { BottomTabs, type AppTab } from "@/components/BottomTabs";
 import { FeedbackShareDock } from "@/components/FeedbackShareDock";
 import { IncomeForm } from "@/components/IncomeForm";
+import { ProjectionPanel } from "@/components/ProjectionPanel";
 import { RateHistoryChart } from "@/components/RateHistoryChart";
 import { RatesTable } from "@/components/RatesTable";
+import { SettingsPanel } from "@/components/SettingsPanel";
 import { SummaryCards } from "@/components/SummaryCards";
 import { calculateIncome } from "@/lib/calculator";
 import { getCycleDays } from "@/lib/dates";
 import { fetchExchangeRates } from "@/lib/rates";
-import type { CountryCode, CycleDays, ExchangeRate, IncomeResult, TimeOffDays } from "@/types";
+import { parseDayCountInput } from "@/lib/inputNumbers";
+import type { CountryCode, CycleDays, ExchangeRate, IncomeResult, PaymentType, TimeOffDays } from "@/types";
 
-const COUNTRIES: Array<{ code: CountryCode; name: string; flag: string }> = [
-  { code: "ar", name: "Argentina", flag: "🇦🇷" },
-  { code: "cl", name: "Chile", flag: "🇨🇱" },
-  { code: "uy", name: "Uruguay", flag: "🇺🇾" },
-  { code: "mx", name: "México", flag: "🇲🇽" },
-  { code: "bo", name: "Bolivia", flag: "🇧🇴" },
-  { code: "br", name: "Brasil", flag: "🇧🇷" },
-  { code: "co", name: "Colombia", flag: "🇨🇴" },
-  { code: "ve", name: "Venezuela", flag: "🇻🇪" },
+const COUNTRIES: Array<{ code: CountryCode; name: string }> = [
+  { code: "ar", name: "Argentina" },
+  { code: "cl", name: "Chile" },
+  { code: "uy", name: "Uruguay" },
+  { code: "mx", name: "Mexico" },
+  { code: "bo", name: "Bolivia" },
+  { code: "br", name: "Brasil" },
+  { code: "co", name: "Colombia" },
+  { code: "ve", name: "Venezuela" },
 ];
 
+type CalculationData = {
+  paymentType: PaymentType;
+  rate: number;
+  hoursPerDay: number;
+  freeWeekdays: number[];
+  timeOffDays: TimeOffDays;
+  startDate: string;
+  endDate: string;
+};
+
+const getTodayIsoDate = () => new Date().toISOString().split("T")[0];
+const PTO_ONBOARDING_STORAGE_KEY = "usd-planner-pto-onboarding-v1-complete";
+
+const isValidTab = (value: unknown): value is AppTab =>
+  value === "calculate" || value === "project" || value === "rates" || value === "settings";
+
+function WelcomeModal({
+  productionDate,
+  onProductionDateChange,
+  onSave,
+  onSkip,
+}: {
+  productionDate: string;
+  onProductionDateChange: (value: string) => void;
+  onSave: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex min-h-[100dvh] items-end justify-center overflow-y-auto bg-zinc-950/65 px-3 py-3 backdrop-blur-sm sm:items-center">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="welcome-modal-title"
+        className="w-full max-w-lg overflow-hidden rounded-[1.5rem] bg-white shadow-[0_30px_100px_-40px_rgba(0,0,0,0.85)] ring-1 ring-zinc-200 dark:bg-[#15171d] dark:ring-white/10"
+      >
+        <div className="p-5 sm:p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
+            👋 Bienvenida
+          </p>
+          <h2 id="welcome-modal-title" className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">
+            Configuremos tus PTO
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            Para calcular vacaciones, necesito saber que dia entraste a produccion. Con eso la app estima 1 PTO por cada mes completo.
+          </p>
+
+          <label htmlFor="productionDate" className="mt-5 block text-sm font-bold text-zinc-800 dark:text-zinc-200">
+            Dia de entrada a produccion
+          </label>
+          <input
+            id="productionDate"
+            type="date"
+            value={productionDate}
+            onChange={(event) => onProductionDateChange(event.target.value)}
+            className="mt-2 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-950 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 dark:border-white/10 dark:bg-[#101218] dark:text-zinc-50 dark:focus:ring-emerald-900"
+          />
+
+          <div className="mt-4 rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-950 dark:bg-blue-950/35 dark:text-blue-100">
+            🔒 Estos datos quedan guardados en este navegador. No se usan para nada mas: solo sirven para hacer tus calculos de sueldo, PTO y vacaciones.
+          </div>
+        </div>
+
+        <div className="grid gap-2 border-t border-zinc-200 bg-zinc-50 px-5 py-4 dark:border-white/10 dark:bg-[#101218] sm:grid-cols-[1fr_auto]">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="rounded-2xl px-4 py-3 text-sm font-black text-zinc-600 transition hover:bg-zinc-100 active:scale-[0.98] dark:text-zinc-300 dark:hover:bg-[#1b1f28]"
+          >
+            Despues
+          </button>
+          <button
+            type="button"
+            onClick={onSave}
+            className="rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 active:scale-[0.98] dark:bg-zinc-50 dark:text-zinc-950"
+          >
+            Guardar y empezar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<AppTab>("calculate");
   const [cycleDays, setCycleDays] = useState<CycleDays | null>(null);
   const [incomeResult, setIncomeResult] = useState<IncomeResult | null>(null);
+  const [calculationData, setCalculationData] = useState<CalculationData | null>(null);
   const [rates, setRates] = useState<ExchangeRate[]>([]);
   const [isLoadingRates, setIsLoadingRates] = useState(false);
   const [ratesError, setRatesError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>("ar");
+  const [preferredRateCasa, setPreferredRateCasa] = useState("cripto");
+  const [hireDate, setHireDate] = useState(getTodayIsoDate());
+  const [usedPtoDays, setUsedPtoDays] = useState("0");
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [welcomeProductionDate, setWelcomeProductionDate] = useState(getTodayIsoDate());
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("usd-planner-theme");
     const savedCountry = localStorage.getItem("usd-planner-country") as CountryCode | null;
+    const savedPreferredRateCasa = localStorage.getItem("usd-planner-preferred-rate-casa");
+    const savedTab = localStorage.getItem("usd-planner-active-tab");
+    const savedHireDate = localStorage.getItem("usd-planner-hire-date");
+    const savedUsedPtoDays = localStorage.getItem("usd-planner-used-pto-days");
+    const savedOnboarding = localStorage.getItem(PTO_ONBOARDING_STORAGE_KEY);
 
     if (savedCountry && COUNTRIES.some((country) => country.code === savedCountry)) {
       setSelectedCountry(savedCountry);
+    }
+
+    if (savedPreferredRateCasa) {
+      setPreferredRateCasa(savedPreferredRateCasa);
+    }
+
+    if (isValidTab(savedTab)) {
+      setActiveTab(savedTab);
+    }
+
+    if (savedHireDate) {
+      setHireDate(savedHireDate);
+      setWelcomeProductionDate(savedHireDate);
+    }
+
+    if (savedUsedPtoDays) {
+      setUsedPtoDays(savedUsedPtoDays);
     }
 
     if (savedTheme) {
@@ -46,6 +163,7 @@ export default function Home() {
       setIsDark(window.matchMedia("(prefers-color-scheme: dark)").matches);
     }
 
+    setShowWelcomeModal(savedOnboarding !== "true");
     setIsMounted(true);
   }, []);
 
@@ -74,12 +192,21 @@ export default function Home() {
   useEffect(() => {
     if (!isMounted) return;
 
-    if (isDark) {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    document.documentElement.classList.toggle("dark", isDark);
   }, [isDark, isMounted]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    localStorage.setItem("usd-planner-active-tab", activeTab);
+  }, [activeTab, isMounted]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+
+    localStorage.setItem("usd-planner-hire-date", hireDate);
+    localStorage.setItem("usd-planner-used-pto-days", usedPtoDays);
+  }, [hireDate, usedPtoDays, isMounted]);
 
   const toggleTheme = () => {
     const newTheme = !isDark;
@@ -92,15 +219,12 @@ export default function Home() {
     localStorage.setItem("usd-planner-country", countryCode);
   };
 
-  const handleCalculate = (data: {
-    paymentType: "minute" | "hour" | "day" | "monthly";
-    rate: number;
-    hoursPerDay: number;
-    freeWeekdays: number[];
-    timeOffDays: TimeOffDays;
-    startDate: string;
-    endDate: string;
-  }) => {
+  const handlePreferredRateChange = (rateCasa: string) => {
+    setPreferredRateCasa(rateCasa);
+    localStorage.setItem("usd-planner-preferred-rate-casa", rateCasa);
+  };
+
+  const handleCalculate = (data: CalculationData) => {
     const days = getCycleDays(data.startDate, data.endDate, data.freeWeekdays, data.timeOffDays);
     const income = calculateIncome({
       paymentType: data.paymentType,
@@ -114,149 +238,184 @@ export default function Home() {
 
     setCycleDays(days);
     setIncomeResult(income);
+    setCalculationData(data);
+  };
+
+  const handleResetSavedData = () => {
+    localStorage.removeItem("usd-planner-form-state");
+    localStorage.removeItem("usd-planner-projection-state");
+    localStorage.removeItem("usd-planner-hire-date");
+    localStorage.removeItem("usd-planner-used-pto-days");
+    localStorage.removeItem(PTO_ONBOARDING_STORAGE_KEY);
+    setHireDate(getTodayIsoDate());
+    setUsedPtoDays("0");
+  };
+
+  const handleWelcomeSave = () => {
+    const dateToSave = welcomeProductionDate || getTodayIsoDate();
+    setHireDate(dateToSave);
+    localStorage.setItem("usd-planner-hire-date", dateToSave);
+    localStorage.setItem(PTO_ONBOARDING_STORAGE_KEY, "true");
+    setShowWelcomeModal(false);
+  };
+
+  const handleWelcomeSkip = () => {
+    localStorage.setItem(PTO_ONBOARDING_STORAGE_KEY, "true");
+    setShowWelcomeModal(false);
   };
 
   const selectedCountryInfo =
     COUNTRIES.find((country) => country.code === selectedCountry) ?? COUNTRIES[0];
+  const primaryRate = rates.find((rate) => rate.casa === preferredRateCasa) ?? rates[0] ?? null;
+  const parsedUsedPtoDays = parseDayCountInput(usedPtoDays);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 pb-24 transition-colors dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="mx-auto w-full max-w-[1800px] px-4 py-4 sm:px-6 md:py-6 2xl:px-10">
-        <header className="mb-6 flex flex-col gap-4 md:mb-8 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex-1 text-center">
-            <h1 className="mb-3 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl">
-              Calculadora de Sueldo USD
-              <span className="mt-1 block text-2xl font-semibold text-blue-600 dark:text-blue-400 md:text-3xl">
-                {selectedCountryInfo.name}
-              </span>
-            </h1>
-            <p className="mx-auto max-w-2xl text-lg text-gray-600 dark:text-gray-300">
-              Calculá tus ingresos en dólares y convertí tu sueldo con cotizaciones actualizadas.
-            </p>
-          </div>
+    <main className="min-h-[100dvh] bg-zinc-50 pb-32 text-zinc-950 transition-colors dark:bg-[#0f1117] dark:text-zinc-50">
+      <AppHud
+        countries={COUNTRIES}
+        selectedCountry={selectedCountry}
+        selectedCountryName={selectedCountryInfo.name}
+        onCountryChange={handleCountryChange}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        incomeResult={incomeResult}
+        primaryRate={primaryRate}
+      />
 
-          <div className="flex items-center justify-center gap-2 lg:justify-end">
-            <label className="sr-only" htmlFor="country-selector">
-              País
-            </label>
-            <select
-              id="country-selector"
-              value={selectedCountry}
-              onChange={(event) => handleCountryChange(event.target.value as CountryCode)}
-              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 shadow-md transition-all hover:shadow-lg focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-900"
-            >
-              {COUNTRIES.map((country) => (
-                <option key={country.code} value={country.code}>
-                  {country.flag} {country.name}
-                </option>
-              ))}
-            </select>
-
-            <button
-              onClick={toggleTheme}
-              className="rounded-xl border border-gray-200 bg-white p-2 shadow-md transition-all hover:shadow-lg dark:border-gray-600 dark:bg-gray-700"
-              aria-label="Cambiar tema"
-            >
-              {isDark ? (
-                <svg className="h-6 w-6 text-yellow-500" fill="currentColor" viewBox="0 0 20 20" suppressHydrationWarning>
-                  <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="h-6 w-6 text-gray-700" fill="currentColor" viewBox="0 0 20 20" suppressHydrationWarning>
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                </svg>
-              )}
-            </button>
-          </div>
-        </header>
-
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(470px,1.25fr)_minmax(400px,1fr)_minmax(390px,1fr)] 2xl:grid-cols-[minmax(560px,1.3fr)_minmax(460px,1fr)_minmax(460px,1fr)] xl:gap-7">
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6 xl:sticky xl:top-6 xl:self-start">
-            <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900">
-                <svg className="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </span>
-              Configuración
-            </h2>
-            <IncomeForm onSubmit={handleCalculate} />
-          </div>
-
-          <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6">
-            <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900">
-                <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </span>
-              Resultados
-            </h2>
-            {cycleDays && incomeResult ? (
-              <>
-                <SummaryCards cycleDays={cycleDays} incomeResult={incomeResult} />
-                {!isLoadingRates && rates.length > 0 && (
-                  <RatesTable rates={rates} totalIncomeUsd={incomeResult.totalIncomeUsd} />
-                )}
-              </>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <svg className="mb-4 h-16 w-16 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <p className="text-lg text-gray-500 dark:text-gray-400">
-                  Completá el formulario para ver los resultados
-                </p>
+      <div className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:py-7">
+        {activeTab === "calculate" && (
+          <section className="mx-auto grid w-full max-w-6xl gap-5 xl:grid-cols-[minmax(360px,460px)_minmax(0,1fr)] xl:items-start">
+            <div className="rounded-[1.75rem] bg-white p-5 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.55)] ring-1 ring-zinc-200/70 dark:bg-[#15171d] dark:ring-white/10 sm:p-6 xl:sticky xl:top-32 xl:self-start">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
+                Calcular
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">
+                Configuración del ciclo
+              </h2>
+              <div className="mt-5">
+                <IncomeForm onSubmit={handleCalculate} />
               </div>
-            )}
-          </div>
+            </div>
 
-          <section className="rounded-2xl border border-gray-100 bg-white p-5 shadow-lg dark:border-gray-700 dark:bg-gray-800 md:p-6 xl:sticky xl:top-6 xl:self-start">
-            <h2 className="mb-4 flex items-center gap-2 text-2xl font-bold text-gray-900 dark:text-white">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-900">
-                <svg className="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 17l6-6 4 4 8-8" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 7h7v7" />
-                </svg>
-              </span>
-              Cotizaciones
-            </h2>
+            <div className="rounded-[1.75rem] bg-white p-5 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.55)] ring-1 ring-zinc-200/70 dark:bg-[#15171d] dark:ring-white/10 sm:p-6 xl:self-start">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
+                    Resultado
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">
+                    Sueldo estimado
+                  </h2>
+                </div>
+                {incomeResult && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("project")}
+                    className="rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-black text-white transition hover:-translate-y-0.5 active:translate-y-0 dark:bg-zinc-50 dark:text-zinc-950"
+                  >
+                    Ver proyección
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-5">
+                {cycleDays && incomeResult ? (
+                  <SummaryCards
+                    cycleDays={cycleDays}
+                    incomeResult={incomeResult}
+                    paymentType={calculationData?.paymentType}
+                  />
+                ) : (
+                  <div className="flex min-h-72 flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center dark:border-white/10 dark:bg-[#101218]">
+                    <p className="text-lg font-black text-zinc-900 dark:text-zinc-100">
+                      Cargá tu ciclo y calculá ingresos
+                    </p>
+                    <p className="mt-2 max-w-[46ch] text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+                      Después podés proyectar meses futuros, vacaciones, PTO y VTO con la misma fórmula.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeTab === "project" && (
+          <ProjectionPanel
+            calculationData={calculationData}
+            hireDate={hireDate}
+            usedPtoDays={parsedUsedPtoDays}
+            primaryRate={primaryRate}
+          />
+        )}
+
+        {activeTab === "rates" && (
+          <section className="mx-auto w-full max-w-5xl rounded-[1.75rem] bg-white p-5 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.55)] ring-1 ring-zinc-200/70 dark:bg-zinc-900 dark:ring-zinc-800 sm:p-6">
+            <div className="mb-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-400">
+                Cotizaciones
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 dark:text-zinc-50">
+                Dólar y moneda local
+              </h2>
+            </div>
 
             {isLoadingRates && (
-              <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400">
+              <div className="rounded-[1.5rem] border border-dashed border-zinc-300 bg-zinc-50 p-8 text-center text-sm font-bold text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
                 Cargando cotizaciones...
               </div>
             )}
 
             {ratesError && (
-              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/40">
-                <svg className="h-5 w-5 flex-shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" suppressHydrationWarning>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                  {ratesError}
-                </p>
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+                {ratesError}
               </div>
             )}
 
-            {!isLoadingRates && !ratesError && rates.length > 0 && <RatesTable rates={rates} />}
-
-            {selectedCountry === "ar" ? (
-              <RateHistoryChart />
-            ) : (
-              <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm font-medium text-gray-600 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-300">
-                Historial disponible solo para Argentina por ahora
-              </div>
+            {!isLoadingRates && !ratesError && rates.length > 0 && (
+              <>
+                <RatesTable rates={rates} totalIncomeUsd={incomeResult?.totalIncomeUsd} />
+                {selectedCountry === "ar" ? (
+                  <RateHistoryChart />
+                ) : (
+                  <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm font-bold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300">
+                    Historial disponible solo para Argentina por ahora.
+                  </div>
+                )}
+              </>
             )}
           </section>
-        </div>
+        )}
 
-        <footer className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>Las cotizaciones son informativas y pueden variar. Esta herramienta no es asesoría financiera.</p>
+        {activeTab === "settings" && (
+          <SettingsPanel
+            hireDate={hireDate}
+            onHireDateChange={setHireDate}
+            usedPtoDays={usedPtoDays}
+            onUsedPtoDaysChange={setUsedPtoDays}
+            rates={rates}
+            preferredRateCasa={primaryRate?.casa ?? preferredRateCasa}
+            onPreferredRateChange={handlePreferredRateChange}
+            onResetSavedData={handleResetSavedData}
+          />
+        )}
+
+        <footer className="mx-auto mt-8 max-w-3xl text-center text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+          Las cotizaciones son informativas y pueden variar. Esta herramienta es una estimación
+          orientativa y no reemplaza políticas internas, contratos ni asesoría financiera.
         </footer>
       </div>
+
+      <BottomTabs activeTab={activeTab} onTabChange={setActiveTab} />
       <FeedbackShareDock />
+      {isMounted && showWelcomeModal && (
+        <WelcomeModal
+          productionDate={welcomeProductionDate}
+          onProductionDateChange={setWelcomeProductionDate}
+          onSave={handleWelcomeSave}
+          onSkip={handleWelcomeSkip}
+        />
+      )}
     </main>
   );
 }

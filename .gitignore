@@ -19,6 +19,7 @@ coverage/
 
 # Local dev logs
 .codex-dev-server.*.log
+.superpowers/
 
 # Node.js portable
 node-v20.19.0-win-x64/

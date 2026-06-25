@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { formatArs } from "@/lib/formatters";
 import type { ExchangeRate } from "@/types";
 import {
@@ -18,6 +19,26 @@ interface IncomeChartProps {
 }
 
 export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const [isChartReady, setIsChartReady] = useState(false);
+
+  useEffect(() => {
+    const container = chartContainerRef.current;
+    if (!container) return;
+
+    const updateReadyState = () => {
+      setIsChartReady(container.getBoundingClientRect().width > 0);
+    };
+    const resizeObserver = new ResizeObserver(updateReadyState);
+
+    updateReadyState();
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
   if (rates.length === 0) {
     return null;
   }
@@ -48,31 +69,33 @@ export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
         Comparación de ingresos en ARS
       </h3>
-      <div className="w-full h-56">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
-            <XAxis
-              dataKey="name"
-              tick={{ fill: "#6a7282", fontSize: 12 }}
-              axisLine={{ stroke: "#e5e7eb" }}
-              tickLine={{ stroke: "#e5e7eb" }}
-            />
-            <YAxis
-              tick={{ fill: "#6a7282", fontSize: 12 }}
-              axisLine={{ stroke: "#e5e7eb" }}
-              tickLine={{ stroke: "#e5e7eb" }}
-              tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar
-              dataKey="value"
-              fill="#3b82f6"
-              radius={[4, 4, 0, 0]}
-              className="hover:opacity-80 transition-opacity"
-            />
-          </BarChart>
-        </ResponsiveContainer>
+      <div ref={chartContainerRef} className="h-56 min-h-56 w-full min-w-0">
+        {isChartReady && (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+              <XAxis
+                dataKey="name"
+                tick={{ fill: "#6a7282", fontSize: 12 }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={{ stroke: "#e5e7eb" }}
+              />
+              <YAxis
+                tick={{ fill: "#6a7282", fontSize: 12 }}
+                axisLine={{ stroke: "#e5e7eb" }}
+                tickLine={{ stroke: "#e5e7eb" }}
+                tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar
+                dataKey="value"
+                fill="#3b82f6"
+                radius={[4, 4, 0, 0]}
+                className="hover:opacity-80 transition-opacity"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

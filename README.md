@@ -1,6 +1,6 @@
 # USD Income Planner Argentina
 
-Web app for freelancers, contractors, and remote workers in Argentina who earn in USD and need a quick way to estimate income, convert it to ARS, and compare exchange-rate scenarios.
+Web app for freelancers, contractors, and remote workers in LATAM who earn in USD and need a quick way to estimate income, convert it to local currency, and compare exchange-rate scenarios.
 
 Live demo: https://calculadora-ingresos-usd.vercel.app/
 
@@ -15,6 +15,10 @@ It is also part of my portfolio as a bilingual healthcare interpreter and AI aut
 - Income calculation by minute, hour, day, or fixed monthly salary
 - Custom work cycle using start and end dates
 - Weekly days off selection
+- Bottom task tabs for calculating, projecting, checking rates, and adjusting PTO settings
+- Monthly projections for 3, 6, 12, or remaining months in the current year
+- PTO accrual estimate using hire date and already-used PTO
+- Vacation range planner that ignores weekly days off and warns when PTO is missing
 - Worked days, free days, total hours, and USD income summary
 - USD to local currency conversion using DolarAPI endpoints
 - Multi-country selector for Argentina and several Latin American countries
@@ -104,6 +108,7 @@ automation/
 - Add local saved calculations
 - Add cycle comparison
 - Add monthly expenses and savings projections
+- Add multiple vacation ranges
 - Expand n8n workflow with scheduled alerts
 
 ## Disclaimer

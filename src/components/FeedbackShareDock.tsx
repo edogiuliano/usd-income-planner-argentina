@@ -240,23 +240,23 @@ export function FeedbackShareDock() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-24 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {showNudge && !isWidgetOpen && (
-        <div className="max-w-[18rem] rounded-2xl border border-gray-200 bg-white/95 p-3 shadow-xl shadow-blue-950/15 backdrop-blur transition-all dark:border-gray-700 dark:bg-gray-900/95">
+        <div className="max-w-[18rem] rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-xl shadow-zinc-950/10 backdrop-blur transition-all dark:border-white/10 dark:bg-[#15171d]/95">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white">
+            <div className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white">
               <IconMessage />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-white">Estoy puliendo esta calculadora</p>
-              <p className="mt-0.5 text-xs leading-5 text-gray-600 dark:text-gray-300">
+              <p className="text-sm font-bold text-zinc-900 dark:text-white">Estoy puliendo esta calculadora</p>
+              <p className="mt-0.5 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
                 Si viste algo raro, mandame feedback en dos segundos.
               </p>
             </div>
             <button
               type="button"
               onClick={() => setShowNudge(false)}
-              className="rounded-lg p-1 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700 active:scale-95 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              className="rounded-lg p-1 text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 active:scale-95 dark:hover:bg-[#20242d] dark:hover:text-zinc-100"
               aria-label="Cerrar aviso de feedback"
             >
               <IconClose />
@@ -266,18 +266,18 @@ export function FeedbackShareDock() {
       )}
 
       {isWidgetOpen && (
-        <div className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white/95 shadow-2xl shadow-blue-950/20 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
-          <div className="flex items-start justify-between gap-3 border-b border-gray-100 p-4 dark:border-gray-800">
+        <div className="w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-zinc-200 bg-white/95 shadow-2xl shadow-zinc-950/20 backdrop-blur dark:border-white/10 dark:bg-[#15171d]/95">
+          <div className="flex items-start justify-between gap-3 border-b border-zinc-100 p-4 dark:border-white/10">
             <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">Ayudame a mejorarla</p>
-              <p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
+              <p className="text-sm font-bold text-zinc-900 dark:text-white">Ayudame a mejorarla</p>
+              <p className="mt-1 text-xs leading-5 text-zinc-600 dark:text-zinc-300">
                 Feedback rapido o compartila con alguien que cobre en USD.
               </p>
             </div>
             <button
               type="button"
               onClick={closeWidget}
-              className="rounded-xl border border-gray-200 p-2 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900 active:scale-95 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800 dark:hover:text-white"
+              className="rounded-xl border border-zinc-200 p-2 text-zinc-500 transition hover:bg-zinc-50 hover:text-zinc-900 active:scale-95 dark:border-white/10 dark:text-zinc-300 dark:hover:bg-[#20242d] dark:hover:text-white"
               aria-label="Cerrar panel"
             >
               <IconClose />
@@ -290,8 +290,8 @@ export function FeedbackShareDock() {
               onClick={() => openPanel("feedback")}
               className={`rounded-xl px-4 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
                 activePanel === "feedback"
-                  ? "bg-blue-600 text-white"
-                  : "border border-gray-200 text-gray-800 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
+                  ? "bg-emerald-600 text-white"
+                  : "border border-zinc-200 text-zinc-800 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-100 dark:hover:bg-[#20242d]"
               }`}
             >
               Feedback
@@ -301,8 +301,8 @@ export function FeedbackShareDock() {
               onClick={() => openPanel("share")}
               className={`rounded-xl px-4 py-2.5 text-sm font-bold transition active:scale-[0.98] ${
                 activePanel === "share"
-                  ? "bg-gray-900 text-white dark:bg-blue-600"
-                  : "border border-gray-200 text-gray-800 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
+                  ? "bg-zinc-950 text-white dark:bg-emerald-600"
+                  : "border border-zinc-200 text-zinc-800 hover:bg-zinc-50 dark:border-white/10 dark:text-zinc-100 dark:hover:bg-[#20242d]"
               }`}
             >
               Compartir
@@ -310,8 +310,8 @@ export function FeedbackShareDock() {
           </div>
 
           {activePanel === "feedback" && (
-            <form onSubmit={handleSubmit} className="border-t border-gray-100 p-3 dark:border-gray-800">
-              <label htmlFor="feedback-message" className="mb-2 block text-sm font-semibold text-gray-800 dark:text-gray-200">
+            <form onSubmit={handleSubmit} className="border-t border-zinc-100 p-3 dark:border-white/10">
+              <label htmlFor="feedback-message" className="mb-2 block text-sm font-semibold text-zinc-800 dark:text-zinc-200">
                 Tu comentario
               </label>
               <textarea
@@ -320,18 +320,18 @@ export function FeedbackShareDock() {
                 onChange={(event) => setFeedback(event.target.value)}
                 rows={4}
                 placeholder="Ej: faltaria comparar dos ciclos, el grafico no se ve claro en celu..."
-                className="w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:ring-blue-950"
+                className="w-full resize-none rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-[#20242d] dark:text-white dark:focus:ring-emerald-950"
               />
               <input
                 value={contact}
                 onChange={(event) => setContact(event.target.value)}
                 placeholder="Email o WhatsApp opcional"
-                className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-gray-700 dark:bg-gray-800 dark:text-white dark:focus:ring-blue-950"
+                className="mt-2 w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-[#20242d] dark:text-white dark:focus:ring-emerald-950"
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="mt-3 w-full rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gray-800 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-gray-400 dark:bg-blue-600 dark:hover:bg-blue-700"
+                className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-400"
               >
                 {status === "loading" ? "Enviando..." : "Enviar feedback"}
               </button>
@@ -339,8 +339,8 @@ export function FeedbackShareDock() {
           )}
 
           {activePanel === "share" && (
-            <div className="border-t border-gray-100 p-3 dark:border-gray-800">
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs leading-5 text-gray-600 dark:border-gray-700 dark:bg-gray-800/70 dark:text-gray-300">
+            <div className="border-t border-zinc-100 p-3 dark:border-white/10">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs leading-5 text-zinc-600 dark:border-white/10 dark:bg-[#20242d] dark:text-zinc-300">
                 {FULL_SHARE_TEXT}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -350,9 +350,9 @@ export function FeedbackShareDock() {
                     href={link.href}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-bold text-gray-800 transition hover:bg-gray-50 active:scale-[0.98] dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
+                    className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-bold text-zinc-800 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-white/10 dark:text-zinc-100 dark:hover:bg-[#20242d]"
                   >
-                    <span className="flex h-6 min-w-6 items-center justify-center rounded-lg bg-gray-900 text-white dark:bg-gray-700">
+                    <span className="flex h-6 min-w-6 items-center justify-center rounded-lg bg-zinc-950 text-white dark:bg-zinc-700">
                       {link.icon}
                     </span>
                     {link.name}
@@ -361,9 +361,9 @@ export function FeedbackShareDock() {
                 <button
                   type="button"
                   onClick={handleInstagramShare}
-                  className="flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-bold text-gray-800 transition hover:bg-gray-50 active:scale-[0.98] dark:border-gray-700 dark:text-gray-100 dark:hover:bg-gray-800"
+                  className="flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-bold text-zinc-800 transition hover:bg-zinc-50 active:scale-[0.98] dark:border-white/10 dark:text-zinc-100 dark:hover:bg-[#20242d]"
                 >
-                  <span className="flex h-6 min-w-6 items-center justify-center rounded-lg bg-gray-900 text-white dark:bg-gray-700">
+                  <span className="flex h-6 min-w-6 items-center justify-center rounded-lg bg-zinc-950 text-white dark:bg-zinc-700">
                     <IconInstagram />
                   </span>
                   Instagram
@@ -371,7 +371,7 @@ export function FeedbackShareDock() {
                 <button
                   type="button"
                   onClick={handleNativeShare}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-[0.98]"
                 >
                   <IconShare />
                   Compartir
@@ -382,7 +382,7 @@ export function FeedbackShareDock() {
 
           {message && (
             <p
-              className={`border-t px-3 py-2 text-sm font-medium dark:border-gray-800 ${
+              className={`border-t px-3 py-2 text-sm font-medium dark:border-white/10 ${
                 status === "success"
                   ? "border-emerald-100 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
                   : "border-red-100 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200"
@@ -399,18 +399,18 @@ export function FeedbackShareDock() {
           <button
             type="button"
             onClick={() => openPanel("share")}
-            className="hidden rounded-full border border-gray-200 bg-white/95 px-4 py-3 text-sm font-bold text-gray-800 shadow-lg shadow-blue-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-gray-50 active:scale-95 dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-100 dark:hover:bg-gray-800 sm:inline-flex"
+            className="hidden rounded-full border border-zinc-200 bg-white/95 px-4 py-3 text-sm font-bold text-zinc-800 shadow-lg shadow-zinc-950/10 backdrop-blur transition hover:-translate-y-0.5 hover:bg-zinc-50 active:scale-95 dark:border-white/10 dark:bg-[#15171d]/95 dark:text-zinc-100 dark:hover:bg-[#20242d] sm:inline-flex"
           >
             Compartir
           </button>
           <button
             type="button"
             onClick={() => openPanel("feedback")}
-            className="group flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-xl shadow-blue-950/25 transition hover:-translate-y-0.5 hover:bg-blue-700 active:scale-95"
+            className="group flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-950/25 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:scale-95"
             aria-label="Abrir feedback"
           >
             <IconMessage />
-            <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border-2 border-white bg-emerald-400 dark:border-gray-900" />
+            <span className="absolute -right-0.5 -top-0.5 h-4 w-4 rounded-full border-2 border-white bg-emerald-400 dark:border-[#0f1117]" />
           </button>
         </div>
       )}

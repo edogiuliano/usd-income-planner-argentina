@@ -1,32 +1,41 @@
 import { formatNumber, formatUsd } from "@/lib/formatters";
-import type { CycleDays, IncomeResult } from "@/types";
+import type { CycleDays, IncomeResult, PaymentType } from "@/types";
 
 interface SummaryCardsProps {
   cycleDays: CycleDays;
   incomeResult: IncomeResult;
+  paymentType?: PaymentType;
 }
 
-export function SummaryCards({ cycleDays, incomeResult }: SummaryCardsProps) {
-  const cards = [
+type CardColor = "zinc" | "emerald" | "amber";
+
+export function SummaryCards({ cycleDays, incomeResult, paymentType }: SummaryCardsProps) {
+  const cards: Array<{
+    label: string;
+    value: string;
+    icon: string;
+    color: CardColor;
+    highlight?: boolean;
+  }> = [
     {
-      label: "Días totales",
+      label: "Dias totales",
       value: formatNumber(cycleDays.totalDays),
       icon: "📅",
-      color: "blue",
+      color: "zinc",
     },
     {
-      label: "Días libres",
+      label: "Dias libres",
       value: formatNumber(cycleDays.freeDays),
       icon: "🏖️",
-      color: "purple",
+      color: "zinc",
     },
     ...(cycleDays.vtoDays > 0
       ? [
           {
             label: "VTO",
             value: formatNumber(cycleDays.vtoDays),
-            icon: "🚫",
-            color: "amber",
+            icon: "⏸️",
+            color: "amber" as const,
           },
         ]
       : []),
@@ -36,7 +45,7 @@ export function SummaryCards({ cycleDays, incomeResult }: SummaryCardsProps) {
             label: "PTO",
             value: formatNumber(cycleDays.ptoDays),
             icon: "🌴",
-            color: "cyan",
+            color: "emerald" as const,
           },
         ]
       : []),
@@ -44,73 +53,76 @@ export function SummaryCards({ cycleDays, incomeResult }: SummaryCardsProps) {
       label: "Horas totales",
       value: formatNumber(incomeResult.totalHours),
       icon: "⏱️",
-      color: "orange",
+      color: "zinc",
     },
     {
       label: "Ingreso total USD",
       value: formatUsd(incomeResult.totalIncomeUsd),
-      icon: "💰",
+      icon: "💵",
       color: "emerald",
       highlight: true,
     },
     {
       label: "Promedio diario USD",
       value: formatUsd(incomeResult.averageDailyIncomeUsd),
-      icon: "📊",
-      color: "cyan",
+      icon: "📆",
+      color: "zinc",
     },
-    {
-      label: "Promedio horario USD",
-      value: formatUsd(incomeResult.averageHourlyIncomeUsd),
-      icon: "⚡",
-      color: "amber",
-    },
+    ...(paymentType === "hour"
+      ? []
+      : [
+          {
+            label: "Promedio horario USD",
+            value: formatUsd(incomeResult.averageHourlyIncomeUsd),
+            icon: "⚡",
+            color: "amber" as const,
+          },
+        ]),
   ];
 
-  const getColorClasses = (color: string, highlight = false) => {
-    const colors: Record<
-      string,
-      { bg: string; border: string; text: string; darkBg: string; darkBorder: string; darkText: string }
-    > = {
-      blue: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", darkBg: "dark:bg-blue-900/30", darkBorder: "dark:border-blue-700", darkText: "dark:text-blue-300" },
-      green: { bg: "bg-green-50", border: "border-green-200", text: "text-green-700", darkBg: "dark:bg-green-900/30", darkBorder: "dark:border-green-700", darkText: "dark:text-green-300" },
-      purple: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", darkBg: "dark:bg-purple-900/30", darkBorder: "dark:border-purple-700", darkText: "dark:text-purple-300" },
-      orange: { bg: "bg-orange-50", border: "border-orange-200", text: "text-orange-700", darkBg: "dark:bg-orange-900/30", darkBorder: "dark:border-orange-700", darkText: "dark:text-orange-300" },
-      emerald: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", darkBg: "dark:bg-emerald-900/30", darkBorder: "dark:border-emerald-700", darkText: "dark:text-emerald-300" },
-      cyan: { bg: "bg-cyan-50", border: "border-cyan-200", text: "text-cyan-700", darkBg: "dark:bg-cyan-900/30", darkBorder: "dark:border-cyan-700", darkText: "dark:text-cyan-300" },
-      amber: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", darkBg: "dark:bg-amber-900/30", darkBorder: "dark:border-amber-700", darkText: "dark:text-amber-300" },
+  const getColorClasses = (color: CardColor) => {
+    const colors = {
+      zinc: {
+        bg: "bg-zinc-50 dark:bg-[#101218]",
+        border: "border-zinc-200 dark:border-white/10",
+        text: "text-zinc-950 dark:text-zinc-50",
+      },
+      emerald: {
+        bg: "bg-emerald-50 dark:bg-emerald-950/30",
+        border: "border-emerald-200 dark:border-emerald-800/70",
+        text: "text-emerald-800 dark:text-emerald-300",
+      },
+      amber: {
+        bg: "bg-amber-50 dark:bg-amber-950/30",
+        border: "border-amber-200 dark:border-amber-800/70",
+        text: "text-amber-800 dark:text-amber-300",
+      },
     };
 
-    if (highlight) {
-      return {
-        bg: "bg-gradient-to-br from-emerald-50 to-green-50",
-        border: "border-emerald-300",
-        text: "text-emerald-800",
-        darkBg: "dark:bg-gradient-to-br dark:from-emerald-900/30 dark:to-green-900/30",
-        darkBorder: "dark:border-emerald-700",
-        darkText: "dark:text-emerald-300",
-      };
-    }
-
-    return colors[color] || colors.blue;
+    return colors[color];
   };
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
       {cards.map((card) => {
-        const colorClasses = getColorClasses(card.color, card.highlight);
+        const colorClasses = getColorClasses(card.color);
+
         return (
           <div
             key={card.label}
-            className={`rounded-xl border-2 p-3 ${colorClasses.bg} ${colorClasses.darkBg} ${colorClasses.border} ${colorClasses.darkBorder} transition-all hover:shadow-md ${
-              card.highlight ? "shadow-lg" : ""
+            className={`rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${colorClasses.bg} ${colorClasses.border} ${
+              card.highlight ? "shadow-[0_18px_42px_-28px_rgba(16,185,129,0.55)]" : ""
             }`}
           >
-            <div className="mb-1.5 flex items-start justify-between gap-2">
-              <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{card.label}</p>
-              <span className="text-xl leading-none">{card.icon}</span>
+            <div className="mb-2 flex items-start gap-2">
+              <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
+                <span className="mr-2" aria-hidden="true">
+                  {card.icon}
+                </span>
+                {card.label}
+              </p>
             </div>
-            <p className={`text-2xl font-bold ${colorClasses.text} ${colorClasses.darkText}`}>
+            <p className={`font-mono text-2xl font-black tabular-nums ${colorClasses.text}`}>
               {card.value}
             </p>
           </div>

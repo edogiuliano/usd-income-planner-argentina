@@ -167,7 +167,7 @@ export function RateHistoryChart() {
       )}
 
       {!isLoading && !error && chartData.length > 0 && (
-        <div className="h-64 w-full 2xl:h-72">
+        <div className="h-64 min-h-64 w-full min-w-0 2xl:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 18, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />

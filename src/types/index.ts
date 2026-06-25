@@ -7,6 +7,8 @@ export type TimeOffDays = {
   ptoDays: number;
 };
 
+export type ProjectionHorizon = "3" | "6" | "12" | "year";
+
 export type ExchangeRate = {
   casa: string;
   name: string;
@@ -47,4 +49,41 @@ export type CalculatorInput = {
   scheduledWorkDays?: number;
   paidLeaveDays?: number;
   unpaidLeaveDays?: number;
+};
+
+export type PtoBalance = {
+  hireDate: string;
+  asOfDate: string;
+  accruedPtoDays: number;
+  usedPtoDays: number;
+  availablePtoDays: number;
+  nextPtoDate: string;
+};
+
+export type VacationPlan = {
+  totalVacationDays: number;
+  vacationWorkDays: number;
+  vacationFreeDays: number;
+  availablePtoDays: number;
+  ptoDays: number;
+  vtoDays: number;
+  missingPtoDays: number;
+  nextMissingPtoDate: string | null;
+};
+
+export type VacationProjectionInput = {
+  startDate: string;
+  endDate: string;
+  selectedDates?: string[];
+  keepUncoveredAsVto: boolean;
+};
+
+export type MonthlyProjection = {
+  monthKey: string;
+  monthLabel: string;
+  startDate: string;
+  endDate: string;
+  cycleDays: CycleDays;
+  income: IncomeResult;
+  vacation?: VacationPlan;
 };
