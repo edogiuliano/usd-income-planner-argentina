@@ -1,6 +1,6 @@
 export type PaymentType = "minute" | "hour" | "day" | "monthly";
 
-export type CountryCode = "ar" | "cl" | "uy" | "mx" | "bo" | "br" | "co" | "ve";
+export type CountryCode = "ar" | "cl" | "uy" | "mx" | "bo" | "br" | "co" | "ve" | "other";
 
 export type TimeOffDays = {
   vtoDays: number;

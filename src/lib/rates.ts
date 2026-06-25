@@ -65,6 +65,11 @@ const COUNTRY_RATES_CONFIG: Record<CountryCode, CountryRatesConfig> = {
     currencyCode: "VES",
     locale: "es-VE",
   },
+  other: {
+    endpoints: [],
+    currencyCode: "USD",
+    locale: "en-US",
+  },
 };
 
 async function fetchEndpoint(url: string): Promise<RateApiItem[]> {
@@ -101,6 +106,21 @@ function normalizeRate(
 export async function fetchExchangeRates(countryCode: CountryCode = "ar"): Promise<ExchangeRate[]> {
   try {
     const config = COUNTRY_RATES_CONFIG[countryCode];
+
+    if (countryCode === "other") {
+      return [
+        {
+          casa: "usd-1",
+          name: "USD",
+          buy: 1,
+          sell: 1,
+          currencyCode: config.currencyCode,
+          locale: config.locale,
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+    }
+
     const responses = await Promise.all(config.endpoints.map((endpoint) => fetchEndpoint(endpoint)));
     const data = responses.flat();
 

@@ -25,6 +25,7 @@ const COUNTRIES: Array<{ code: CountryCode; name: string }> = [
   { code: "br", name: "Brasil" },
   { code: "co", name: "Colombia" },
   { code: "ve", name: "Venezuela" },
+  { code: "other", name: "Otro / USD" },
 ];
 
 type CalculationData = {
@@ -372,7 +373,13 @@ export default function Home() {
               </div>
             )}
 
-            {!isLoadingRates && !ratesError && rates.length > 0 && (
+            {!isLoadingRates && !ratesError && selectedCountry === "other" && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-900 dark:border-emerald-800/70 dark:bg-emerald-950/30 dark:text-emerald-200">
+                Este perfil usa USD como moneda base. No se muestran cotizaciones locales porque no hace falta convertir a otra moneda.
+              </div>
+            )}
+
+            {!isLoadingRates && !ratesError && selectedCountry !== "other" && rates.length > 0 && (
               <>
                 <RatesTable rates={rates} totalIncomeUsd={incomeResult?.totalIncomeUsd} />
                 {selectedCountry === "ar" ? (
