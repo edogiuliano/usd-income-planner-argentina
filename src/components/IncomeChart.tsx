@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatArs } from "@/lib/formatters";
-import type { ExchangeRate } from "@/types";
+import { convertUsd } from "@/lib/conversion";
+import type { ExchangeOperation, ExchangeRate } from "@/types";
 import {
   BarChart,
   Bar,
@@ -16,9 +17,32 @@ import {
 interface IncomeChartProps {
   rates: ExchangeRate[];
   totalIncomeUsd: number;
+  operation?: ExchangeOperation;
 }
 
-export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
+function IncomeTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ value?: number; payload?: { name: string } }>;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-[#191c22]">
+      <p className="mb-1 text-sm font-semibold">{payload[0].payload?.name}</p>
+      <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+        {formatArs(payload[0].value ?? 0)}
+      </p>
+    </div>
+  );
+}
+
+export function IncomeChart({
+  rates,
+  totalIncomeUsd,
+  operation = "sell-usd",
+}: IncomeChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [isChartReady, setIsChartReady] = useState(false);
 
@@ -45,24 +69,8 @@ export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
 
   const data = rates.map((rate) => ({
     name: rate.name,
-    value: totalIncomeUsd * rate.sell,
+    value: convertUsd(totalIncomeUsd, rate, operation),
   }));
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-            {payload[0].payload.name}
-          </p>
-          <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
-            {formatArs(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="mt-4">
@@ -72,8 +80,15 @@ export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
       <div ref={chartContainerRef} className="h-56 min-h-56 w-full min-w-0">
         {isChartReady && (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+            <BarChart
+              data={data}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#e5e7eb"
+              />
               <XAxis
                 dataKey="name"
                 tick={{ fill: "#6a7282", fontSize: 12 }}
@@ -86,10 +101,10 @@ export function IncomeChart({ rates, totalIncomeUsd }: IncomeChartProps) {
                 tickLine={{ stroke: "#e5e7eb" }}
                 tickFormatter={(value) => `$${(value / 1000000).toFixed(1)}M`}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<IncomeTooltip />} />
               <Bar
                 dataKey="value"
-                fill="#3b82f6"
+                fill="#059669"
                 radius={[4, 4, 0, 0]}
                 className="hover:opacity-80 transition-opacity"
               />

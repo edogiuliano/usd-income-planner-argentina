@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseDayCountInput, parseMoneyInput, parseNumberInput } from "@/lib/inputNumbers";
+import {
+  parseDayCountInput,
+  parseMoneyInput,
+  parseNumberInput,
+} from "@/lib/inputNumbers";
 
 describe("input number parsing", () => {
   it("parses comma decimals for regular decimal inputs", () => {
@@ -21,5 +25,10 @@ describe("input number parsing", () => {
   it("normalizes day counts to non-negative integers", () => {
     expect(parseDayCountInput("2,9")).toBe(2);
     expect(parseDayCountInput("-3")).toBe(0);
+  });
+  it("accepts decimal-dot monthly amounts without interpreting cents as thousands", () => {
+    expect(parseMoneyInput("2500.50", "monthly")).toBe(2500.5);
+    expect(parseMoneyInput("1,500.50", "monthly")).toBe(1500.5);
+    expect(parseMoneyInput("1.500,50", "day")).toBe(1500.5);
   });
 });

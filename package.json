@@ -1,12 +1,13 @@
 {
   "name": "usd-income-planner-argentina",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "index.js",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint src tests --max-warnings=0",
+    "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui"
   },
@@ -39,6 +40,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.4",
     "autoprefixer": "^10.5.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.2.4",
     "postcss": "^8.5.14",
     "tailwindcss": "^4.2.4"
   }

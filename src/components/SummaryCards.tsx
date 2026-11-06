@@ -1,133 +1,123 @@
-import { formatNumber, formatUsd } from "@/lib/formatters";
-import type { CycleDays, IncomeResult, PaymentType } from "@/types";
+import { formatCurrency, formatNumber, formatUsd } from "@/lib/formatters";
+import {
+  convertUsd,
+  getConversionRate,
+  operationLabel,
+} from "@/lib/conversion";
+import type {
+  CycleDays,
+  ExchangeOperation,
+  ExchangeRate,
+  IncomeResult,
+  PaymentType,
+} from "@/types";
 
 interface SummaryCardsProps {
   cycleDays: CycleDays;
   incomeResult: IncomeResult;
   paymentType?: PaymentType;
+  primaryRate: ExchangeRate | null;
+  operation: ExchangeOperation;
+  isLoadingRates: boolean;
+  ratesError: string | null;
 }
 
-type CardColor = "zinc" | "emerald" | "amber";
-
-export function SummaryCards({ cycleDays, incomeResult, paymentType }: SummaryCardsProps) {
-  const cards: Array<{
-    label: string;
-    value: string;
-    icon: string;
-    color: CardColor;
-    highlight?: boolean;
-  }> = [
-    {
-      label: "Dias totales",
-      value: formatNumber(cycleDays.totalDays),
-      icon: "📅",
-      color: "zinc",
-    },
-    {
-      label: "Dias libres",
-      value: formatNumber(cycleDays.freeDays),
-      icon: "🏖️",
-      color: "zinc",
-    },
-    ...(cycleDays.vtoDays > 0
-      ? [
-          {
-            label: "VTO",
-            value: formatNumber(cycleDays.vtoDays),
-            icon: "⏸️",
-            color: "amber" as const,
-          },
-        ]
-      : []),
+export function SummaryCards({
+  cycleDays,
+  incomeResult,
+  paymentType,
+  primaryRate,
+  operation,
+  isLoadingRates,
+  ratesError,
+}: SummaryCardsProps) {
+  const converted = primaryRate
+    ? convertUsd(incomeResult.totalIncomeUsd, primaryRate, operation)
+    : null;
+  const statistics = [
+    ["📆", "Días trabajados", formatNumber(cycleDays.workedDays)],
+    ["🏖️", "Francos", formatNumber(cycleDays.freeDays)],
+    ["⏱️", "Horas trabajadas", formatNumber(incomeResult.totalHours)],
+    ["📅", "Días del ciclo", formatNumber(cycleDays.totalDays)],
     ...(cycleDays.ptoDays > 0
+      ? [["🌴", "PTO pagos", formatNumber(cycleDays.ptoDays)]]
+      : []),
+    ["⏸️", "VTO sin pago", formatNumber(cycleDays.vtoDays)],
+    [
+      "💵",
+      "Promedio diario USD",
+      formatUsd(incomeResult.averageDailyIncomeUsd),
+    ],
+    ...(paymentType !== "hour"
       ? [
-          {
-            label: "PTO",
-            value: formatNumber(cycleDays.ptoDays),
-            icon: "🌴",
-            color: "emerald" as const,
-          },
+          [
+            "⚡",
+            "Promedio horario USD",
+            formatUsd(incomeResult.averageHourlyIncomeUsd),
+          ],
         ]
       : []),
-    {
-      label: "Horas totales",
-      value: formatNumber(incomeResult.totalHours),
-      icon: "⏱️",
-      color: "zinc",
-    },
-    {
-      label: "Ingreso total USD",
-      value: formatUsd(incomeResult.totalIncomeUsd),
-      icon: "💵",
-      color: "emerald",
-      highlight: true,
-    },
-    {
-      label: "Promedio diario USD",
-      value: formatUsd(incomeResult.averageDailyIncomeUsd),
-      icon: "📆",
-      color: "zinc",
-    },
-    ...(paymentType === "hour"
-      ? []
-      : [
-          {
-            label: "Promedio horario USD",
-            value: formatUsd(incomeResult.averageHourlyIncomeUsd),
-            icon: "⚡",
-            color: "amber" as const,
-          },
-        ]),
   ];
-
-  const getColorClasses = (color: CardColor) => {
-    const colors = {
-      zinc: {
-        bg: "bg-zinc-50 dark:bg-[#101218]",
-        border: "border-zinc-200 dark:border-white/10",
-        text: "text-zinc-950 dark:text-zinc-50",
-      },
-      emerald: {
-        bg: "bg-emerald-50 dark:bg-emerald-950/30",
-        border: "border-emerald-200 dark:border-emerald-800/70",
-        text: "text-emerald-800 dark:text-emerald-300",
-      },
-      amber: {
-        bg: "bg-amber-50 dark:bg-amber-950/30",
-        border: "border-amber-200 dark:border-amber-800/70",
-        text: "text-amber-800 dark:text-amber-300",
-      },
-    };
-
-    return colors[color];
-  };
-
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-      {cards.map((card) => {
-        const colorClasses = getColorClasses(card.color);
-
-        return (
-          <div
-            key={card.label}
-            className={`rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${colorClasses.bg} ${colorClasses.border} ${
-              card.highlight ? "shadow-[0_18px_42px_-28px_rgba(16,185,129,0.55)]" : ""
-            }`}
-          >
-            <div className="mb-2 flex items-start gap-2">
-              <p className="text-sm font-bold text-zinc-600 dark:text-zinc-300">
-                <span className="mr-2" aria-hidden="true">
-                  {card.icon}
-                </span>
-                {card.label}
-              </p>
-            </div>
-            <p className={`font-mono text-2xl font-black tabular-nums ${colorClasses.text}`}>
-              {card.value}
+    <div>
+      <div className="income-totals grid min-w-0 gap-6 border-b border-zinc-200 pb-6 dark:border-white/10 xl:grid-cols-2">
+        <div className="min-w-0" data-income="total-usd">
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            💵 Ingreso total USD
+          </p>
+          <p className="income-value mt-2 text-3xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
+            {formatUsd(incomeResult.totalIncomeUsd)}
+          </p>
+        </div>
+        {primaryRate?.currencyCode !== "USD" && (
+          <div className="min-w-0" data-income="converted">
+            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+              💱 Equivalente en {primaryRate?.currencyCode ?? "moneda local"}
+            </p>
+            <p className="income-value mt-2 text-2xl font-bold tabular-nums">
+              {converted !== null && primaryRate
+                ? formatCurrency(
+                    converted,
+                    primaryRate.currencyCode,
+                    primaryRate.locale,
+                  )
+                : "—"}
+            </p>
+            <p
+              className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400"
+              role="status"
+            >
+              {isLoadingRates
+                ? "Actualizando cotización..."
+                : (ratesError ??
+                  (primaryRate
+                    ? `${primaryRate.name} · ${primaryRate.isReference ? "Referencia única" : operationLabel(operation)} · ${formatCurrency(getConversionRate(primaryRate, operation) ?? 0, primaryRate.currencyCode, primaryRate.locale)} / USD`
+                    : "Cotización no disponible"))}
             </p>
           </div>
-        );
-      })}
+        )}
+      </div>
+      {incomeResult.unpaidLeaveDeductionUsd > 0 && (
+        <div className="mt-4 flex flex-wrap justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+          <span>Descuento VTO incluido</span>
+          <strong>−{formatUsd(incomeResult.unpaidLeaveDeductionUsd)}</strong>
+        </div>
+      )}
+      <dl className="mt-6 grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+        {statistics.map(([icon, label, value]) => (
+          <div key={label} className="min-w-0">
+            <dt className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              <span aria-hidden="true" className="mr-1.5">
+                {icon}
+              </span>
+              {label}
+            </dt>
+            <dd className="mt-1 break-words text-lg font-semibold tabular-nums">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }

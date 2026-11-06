@@ -1,4 +1,13 @@
-import { addDays, addMonths, differenceInDays, format, getDay, isAfter, parseISO } from "date-fns";
+import {
+  addDays,
+  addMonths,
+  differenceInDays,
+  format,
+  getDay,
+  isAfter,
+  isValid,
+  parseISO,
+} from "date-fns";
 import type { PtoBalance, VacationPlan } from "@/types";
 
 const toIsoDate = (date: Date) => format(date, "yyyy-MM-dd");
@@ -11,6 +20,8 @@ const normalizeDayCount = (value: number) => {
 const countCompleteMonths = (hireDate: string, asOfDate: string) => {
   const hire = parseISO(hireDate);
   const asOf = parseISO(asOfDate);
+
+  if (!isValid(hire) || !isValid(asOf)) return 0;
 
   if (isAfter(hire, asOf)) {
     return 0;
@@ -28,23 +39,47 @@ export function getPtoUnlockDate(input: {
   hireDate: string;
   requestedPtoDays: number;
   usedPtoDays?: number;
+  ptoPerMonth?: number;
 }) {
   const requestedPtoDays = normalizeDayCount(input.requestedPtoDays);
   const usedPtoDays = normalizeDayCount(input.usedPtoDays ?? 0);
   const requiredAccruedPtoDays = requestedPtoDays + usedPtoDays;
+  const monthly = input.ptoPerMonth ?? 1;
+  if (
+    !Number.isFinite(monthly) ||
+    monthly <= 0 ||
+    !isValid(parseISO(input.hireDate))
+  )
+    return null;
 
-  return toIsoDate(addMonths(parseISO(input.hireDate), requiredAccruedPtoDays));
+  const monthlyUnits = Math.round(monthly * 10000);
+  if (monthlyUnits === 0) return null;
+
+  return toIsoDate(
+    addMonths(
+      parseISO(input.hireDate),
+      Math.ceil((requiredAccruedPtoDays * 10000) / monthlyUnits),
+    ),
+  );
 }
 
 export function calculatePtoBalance(input: {
   hireDate: string;
   asOfDate: string;
   usedPtoDays?: number;
+  ptoPerMonth?: number;
 }): PtoBalance {
   const usedPtoDays = normalizeDayCount(input.usedPtoDays ?? 0);
-  const accruedPtoDays = countCompleteMonths(input.hireDate, input.asOfDate);
+  const completeMonths = countCompleteMonths(input.hireDate, input.asOfDate);
+  const monthly = Number.isFinite(input.ptoPerMonth ?? 1)
+    ? Math.max(input.ptoPerMonth ?? 1, 0)
+    : 1;
+  const accruedPtoDays = Math.round(completeMonths * monthly * 10000) / 10000;
   const availablePtoDays = Math.max(accruedPtoDays - usedPtoDays, 0);
-  const nextPtoDate = toIsoDate(addMonths(parseISO(input.hireDate), accruedPtoDays + 1));
+  const nextPtoDate =
+    monthly > 0 && isValid(parseISO(input.hireDate))
+      ? toIsoDate(addMonths(parseISO(input.hireDate), completeMonths + 1))
+      : null;
 
   return {
     hireDate: input.hireDate,
@@ -63,13 +98,22 @@ export function evaluateVacationPlan(input: {
   freeWeekdays: number[];
   hireDate: string;
   usedPtoDays?: number;
+  ptoPerMonth?: number;
   keepUncoveredAsVto: boolean;
 }): VacationPlan {
   const selectedDates = Array.from(new Set(input.selectedDates ?? [])).sort();
   const hasSelectedDates = selectedDates.length > 0;
-  const start = parseISO(hasSelectedDates ? selectedDates[0] : input.vacationStartDate);
-  const end = parseISO(hasSelectedDates ? selectedDates[selectedDates.length - 1] : input.vacationEndDate);
-  const totalVacationDays = hasSelectedDates ? selectedDates.length : differenceInDays(end, start) + 1;
+  const start = parseISO(
+    hasSelectedDates ? selectedDates[0] : input.vacationStartDate,
+  );
+  const end = parseISO(
+    hasSelectedDates
+      ? selectedDates[selectedDates.length - 1]
+      : input.vacationEndDate,
+  );
+  const totalVacationDays = hasSelectedDates
+    ? selectedDates.length
+    : differenceInDays(end, start) + 1;
 
   if (totalVacationDays <= 0) {
     return {
@@ -89,7 +133,9 @@ export function evaluateVacationPlan(input: {
 
   const vacationDates = hasSelectedDates
     ? selectedDates
-    : Array.from({ length: totalVacationDays }, (_, index) => toIsoDate(addDays(start, index)));
+    : Array.from({ length: totalVacationDays }, (_, index) =>
+        toIsoDate(addDays(start, index)),
+      );
 
   for (const vacationDate of vacationDates) {
     const currentDate = parseISO(vacationDate);
@@ -105,8 +151,12 @@ export function evaluateVacationPlan(input: {
     hireDate: input.hireDate,
     asOfDate: hasSelectedDates ? selectedDates[0] : input.vacationStartDate,
     usedPtoDays: input.usedPtoDays ?? 0,
+    ptoPerMonth: input.ptoPerMonth,
   });
-  const ptoDays = Math.min(vacationWorkDays, balance.availablePtoDays);
+  const ptoDays = Math.min(
+    vacationWorkDays,
+    Math.floor(balance.availablePtoDays),
+  );
   const missingPtoDays = Math.max(vacationWorkDays - ptoDays, 0);
   const vtoDays = input.keepUncoveredAsVto ? missingPtoDays : 0;
   const nextMissingPtoDate =
@@ -115,6 +165,7 @@ export function evaluateVacationPlan(input: {
           hireDate: input.hireDate,
           requestedPtoDays: vacationWorkDays,
           usedPtoDays: input.usedPtoDays ?? 0,
+          ptoPerMonth: input.ptoPerMonth,
         })
       : null;
 

@@ -1,6 +1,7 @@
 export type PaymentType = "minute" | "hour" | "day" | "monthly";
 
-export type CountryCode = "ar" | "cl" | "uy" | "mx" | "bo" | "br" | "co" | "ve" | "other";
+export type CountryCode =
+  "ar" | "cl" | "uy" | "mx" | "bo" | "br" | "co" | "ve" | "other";
 
 export type TimeOffDays = {
   vtoDays: number;
@@ -17,6 +18,25 @@ export type ExchangeRate = {
   currencyCode: string;
   locale: string;
   updatedAt: string;
+  isReference?: boolean;
+};
+
+export type ExchangeOperation = "sell-usd" | "buy-usd";
+
+export type MonthlyCycle = {
+  startDay: number;
+  endDay: number | "last";
+};
+
+export type CalculationData = {
+  monthlyCycle?: MonthlyCycle;
+  paymentType: PaymentType;
+  rate: number;
+  hoursPerDay: number;
+  freeWeekdays: number[];
+  timeOffDays: TimeOffDays;
+  startDate: string;
+  endDate: string;
 };
 
 export type CycleDays = {
@@ -42,6 +62,7 @@ export type IncomeResult = {
 };
 
 export type CalculatorInput = {
+  monthlyCycle?: MonthlyCycle;
   paymentType: PaymentType;
   rate: number;
   hoursPerDay: number;
@@ -49,6 +70,8 @@ export type CalculatorInput = {
   scheduledWorkDays?: number;
   paidLeaveDays?: number;
   unpaidLeaveDays?: number;
+  startDate?: string;
+  endDate?: string;
 };
 
 export type PtoBalance = {
@@ -57,7 +80,7 @@ export type PtoBalance = {
   accruedPtoDays: number;
   usedPtoDays: number;
   availablePtoDays: number;
-  nextPtoDate: string;
+  nextPtoDate: string | null;
 };
 
 export type VacationPlan = {

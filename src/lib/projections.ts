@@ -8,20 +8,29 @@ import {
   isBefore,
   isWithinInterval,
   parseISO,
+  endOfMonth,
+  isLastDayOfMonth,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { calculateIncome } from "@/lib/calculator";
 import { getCycleDays } from "@/lib/dates";
 import { calculatePtoBalance, evaluateVacationPlan } from "@/lib/pto";
+import {
+  getMonthlyCycleContaining,
+  shiftMonthlyCycle,
+} from "@/lib/monthlyCycles";
 import type {
   MonthlyProjection,
   PaymentType,
   ProjectionHorizon,
   VacationPlan,
   VacationProjectionInput,
+  TimeOffDays,
+  MonthlyCycle,
 } from "@/types";
 
 type GenerateMonthlyProjectionsInput = {
+  monthlyCycle?: MonthlyCycle;
   fromDate: string;
   startDate: string;
   endDate: string;
@@ -32,12 +41,17 @@ type GenerateMonthlyProjectionsInput = {
   freeWeekdays: number[];
   hireDate: string;
   usedPtoDays?: number;
+  ptoPerMonth?: number;
+  timeOffDays?: TimeOffDays;
   vacation?: VacationProjectionInput;
 };
 
 const toIsoDate = (date: Date) => format(date, "yyyy-MM-dd");
 
-const getProjectionMonthCount = (cycleEnd: Date, horizon: ProjectionHorizon) => {
+const getProjectionMonthCount = (
+  cycleEnd: Date,
+  horizon: ProjectionHorizon,
+) => {
   if (horizon === "year") {
     return 12 - cycleEnd.getMonth();
   }
@@ -45,7 +59,10 @@ const getProjectionMonthCount = (cycleEnd: Date, horizon: ProjectionHorizon) => 
   return Number(horizon);
 };
 
-const getVacationWorkDates = (vacation: VacationProjectionInput, freeWeekdays: number[]) => {
+const getVacationWorkDates = (
+  vacation: VacationProjectionInput,
+  freeWeekdays: number[],
+) => {
   if (vacation.selectedDates?.length) {
     return Array.from(new Set(vacation.selectedDates))
       .sort()
@@ -79,6 +96,7 @@ const getVacationForMonth = (input: {
   freeWeekdays: number[];
   hireDate: string;
   usedPtoDays: number;
+  ptoPerMonth?: number;
 }): VacationPlan => {
   const selectedDates = input.vacation.selectedDates
     ? Array.from(new Set(input.vacation.selectedDates)).sort()
@@ -88,19 +106,30 @@ const getVacationForMonth = (input: {
     hireDate: input.hireDate,
     asOfDate: selectedDates?.[0] ?? input.vacation.startDate,
     usedPtoDays: input.usedPtoDays,
+    ptoPerMonth: input.ptoPerMonth,
   }).availablePtoDays;
 
   const monthWorkDates = workDates.filter((date) => {
     const parsedDate = parseISO(date);
-    return isWithinInterval(parsedDate, { start: input.monthStart, end: input.monthEnd });
+    return isWithinInterval(parsedDate, {
+      start: input.monthStart,
+      end: input.monthEnd,
+    });
   });
   const monthSelectedDates = (selectedDates ?? []).filter((date) => {
     const parsedDate = parseISO(date);
-    return isWithinInterval(parsedDate, { start: input.monthStart, end: input.monthEnd });
+    return isWithinInterval(parsedDate, {
+      start: input.monthStart,
+      end: input.monthEnd,
+    });
   });
-  const monthFreeDates = monthSelectedDates.filter((date) => input.freeWeekdays.includes(getDay(parseISO(date))));
+  const monthFreeDates = monthSelectedDates.filter((date) =>
+    input.freeWeekdays.includes(getDay(parseISO(date))),
+  );
   const ptoDates = workDates.slice(0, availablePtoDays);
-  const vtoDates = input.vacation.keepUncoveredAsVto ? workDates.slice(availablePtoDays) : [];
+  const vtoDates = input.vacation.keepUncoveredAsVto
+    ? workDates.slice(availablePtoDays)
+    : [];
   const totalPlan = evaluateVacationPlan({
     vacationStartDate: input.vacation.startDate,
     vacationEndDate: input.vacation.endDate,
@@ -108,17 +137,21 @@ const getVacationForMonth = (input: {
     freeWeekdays: input.freeWeekdays,
     hireDate: input.hireDate,
     usedPtoDays: input.usedPtoDays,
+    ptoPerMonth: input.ptoPerMonth,
     keepUncoveredAsVto: input.vacation.keepUncoveredAsVto,
   });
 
   return {
-    totalVacationDays: selectedDates ? monthSelectedDates.length : monthWorkDates.length,
+    totalVacationDays: selectedDates
+      ? monthSelectedDates.length
+      : monthWorkDates.length,
     vacationWorkDays: monthWorkDates.length,
     vacationFreeDays: monthFreeDates.length,
     availablePtoDays,
     ptoDays: monthWorkDates.filter((date) => ptoDates.includes(date)).length,
     vtoDays: monthWorkDates.filter((date) => vtoDates.includes(date)).length,
-    missingPtoDays: monthWorkDates.filter((date) => !ptoDates.includes(date)).length,
+    missingPtoDays: monthWorkDates.filter((date) => !ptoDates.includes(date))
+      .length,
     nextMissingPtoDate: totalPlan.nextMissingPtoDate,
   };
 };
@@ -130,10 +163,26 @@ export function generateMonthlyProjections(
   const cycleEnd = parseISO(input.endDate);
   const monthCount = getProjectionMonthCount(cycleEnd, input.horizon);
   const usedPtoDays = Math.max(Math.trunc(input.usedPtoDays ?? 0), 0);
+  const configuredCycle = input.monthlyCycle
+    ? getMonthlyCycleContaining(input.startDate, input.monthlyCycle)
+    : null;
+  const isCompleteCycle =
+    configuredCycle?.startDate === input.startDate &&
+    configuredCycle?.endDate === input.endDate;
 
   return Array.from({ length: monthCount }, (_, index) => {
-    const projectionStart = addMonths(cycleStart, index);
-    const projectionEnd = addMonths(cycleEnd, index);
+    const shifted =
+      isCompleteCycle && input.monthlyCycle
+        ? shiftMonthlyCycle(input.startDate, input.monthlyCycle, index)
+        : null;
+    const projectionStart = shifted
+      ? parseISO(shifted.startDate)
+      : addMonths(cycleStart, index);
+    const projectionEnd = shifted
+      ? parseISO(shifted.endDate)
+      : isLastDayOfMonth(cycleEnd)
+        ? endOfMonth(addMonths(cycleEnd, index))
+        : addMonths(cycleEnd, index);
     let ptoDays = 0;
     let vtoDays = 0;
     let vacation: VacationPlan | undefined;
@@ -142,10 +191,15 @@ export function generateMonthlyProjections(
       const selectedDates = input.vacation.selectedDates
         ? Array.from(new Set(input.vacation.selectedDates)).sort()
         : undefined;
-      const vacationStart = parseISO(selectedDates?.[0] ?? input.vacation.startDate);
-      const vacationEnd = parseISO(selectedDates?.[selectedDates.length - 1] ?? input.vacation.endDate);
+      const vacationStart = parseISO(
+        selectedDates?.[0] ?? input.vacation.startDate,
+      );
+      const vacationEnd = parseISO(
+        selectedDates?.[selectedDates.length - 1] ?? input.vacation.endDate,
+      );
       const overlapsProjection =
-        !isAfter(vacationStart, projectionEnd) && !isBefore(vacationEnd, projectionStart);
+        !isAfter(vacationStart, projectionEnd) &&
+        !isBefore(vacationEnd, projectionStart);
 
       if (overlapsProjection) {
         vacation = getVacationForMonth({
@@ -155,16 +209,24 @@ export function generateMonthlyProjections(
           freeWeekdays: input.freeWeekdays,
           hireDate: input.hireDate,
           usedPtoDays,
+          ptoPerMonth: input.ptoPerMonth,
         });
         ptoDays = vacation.ptoDays;
         vtoDays = vacation.vtoDays;
       }
     }
 
-    const cycleDays = getCycleDays(toIsoDate(projectionStart), toIsoDate(projectionEnd), input.freeWeekdays, {
-      ptoDays,
-      vtoDays,
-    });
+    const cycleDays = getCycleDays(
+      toIsoDate(projectionStart),
+      toIsoDate(projectionEnd),
+      input.freeWeekdays,
+      {
+        ptoDays:
+          ptoDays + (index === 0 ? (input.timeOffDays?.ptoDays ?? 0) : 0),
+        vtoDays:
+          vtoDays + (index === 0 ? (input.timeOffDays?.vtoDays ?? 0) : 0),
+      },
+    );
     const income = calculateIncome({
       paymentType: input.paymentType,
       rate: input.rate,
@@ -173,6 +235,9 @@ export function generateMonthlyProjections(
       scheduledWorkDays: cycleDays.scheduledWorkDays,
       paidLeaveDays: cycleDays.ptoDays,
       unpaidLeaveDays: cycleDays.vtoDays,
+      startDate: toIsoDate(projectionStart),
+      endDate: toIsoDate(projectionEnd),
+      monthlyCycle: input.monthlyCycle,
     });
 
     return {

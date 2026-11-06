@@ -4,6 +4,32 @@ Web app for freelancers, contractors, and remote workers in LATAM who earn in US
 
 Live demo: https://calculadora-ingresos-usd.vercel.app/
 
+## Version 1.1
+
+- Compact header, top desktop navigation and four mobile tabs; total USD and local income lead the summary.
+- Configurable monthly work cycles (default 1 through month-end). Start and close days stay linked, such as 26-25. "Este mes" picks the cycle containing today; "Proximo mes" picks the following cycle. Manual date edits and the 7/14-day shortcuts do not change the saved cycle.
+- Fixed salary proration follows the configured work cycle: `monthly salary * included calendar days / total calendar days in that cycle`. Complete cycles contribute one salary. Short-month closing dates adjust automatically; the next cycle starts the following day, without gaps or overlaps.
+- PTO remains paid. VTO is deducted once, proportionally to scheduled workdays, from the prorated base. Manual leave applies to the initial projection cycle only; calendar vacations are additional days.
+- The main form only accepts VTO. PTO from older saved calculations is retained with a removable notice; new vacation PTO is managed through Projections and Settings.
+- Selling USD uses the entity's buy quote; buying USD uses its sell quote. Single-quote sources are explicitly marked as references. No fees or net-income calculations are included.
+- Stable rate identifiers, legacy indexed-ID migration, and separate preferred quotes by country.
+- Saved valid forms restore and recalculate automatically. Invalid edits hide results; a reload recovers the last valid form and its matching calculation.
+- Configurable PTO per completed month (default 1, fractional rates supported). Only whole PTO days cover whole-day vacations. Set 0 to disable accrual.
+- No initial PTO modal. Hire date is requested only when planning vacations; all existing settings remain available.
+
+API field reference: [DolarAPI](https://dolarapi.com/docs/argentina/operations/get-dolares). Lint uses the ESLint CLI because [Next.js 16 removed `next lint`](https://nextjs.org/docs/app/guides/upgrading/version-16).
+
+Validation commands:
+
+```bash
+npm test -- --run
+npm run lint
+npm run typecheck
+npm run build
+```
+
+Security follow-up: the current dependency audit reports vulnerabilities, including a critical advisory affecting the existing Next.js version. Dependency upgrades are intentionally separate from the 1.1 UI/calculation changes; review and patch them before a public release.
+
 ## Why I Built It
 
 Many remote workers in Argentina get paid in USD but plan expenses in ARS. This project turns that everyday problem into a practical calculator with real exchange-rate data, clear income summaries, charts, tests, and an n8n automation workflow.

@@ -1,12 +1,18 @@
 import { formatCurrency } from "@/lib/formatters";
-import type { ExchangeRate } from "@/types";
+import { convertUsd, operationLabel } from "@/lib/conversion";
+import type { ExchangeOperation, ExchangeRate } from "@/types";
 
 interface RatesTableProps {
   rates: ExchangeRate[];
   totalIncomeUsd?: number;
+  operation?: ExchangeOperation;
 }
 
-export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
+export function RatesTable({
+  rates,
+  totalIncomeUsd,
+  operation = "sell-usd",
+}: RatesTableProps) {
   if (rates.length === 0) {
     return null;
   }
@@ -33,6 +39,10 @@ export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
       <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
         Cotizaciones y conversión
       </h3>
+      <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+        {operationLabel(operation)}. Las fuentes sin compra/venta se muestran
+        como referencia.
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
@@ -59,7 +69,14 @@ export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
                 key={rate.casa}
                 className="border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-700/50"
               >
-                <td className="px-3 py-2 text-gray-900 dark:text-white">{rate.name}</td>
+                <td className="px-3 py-2 text-gray-900 dark:text-white">
+                  {rate.name}
+                  {rate.isReference && (
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">
+                      Referencia única
+                    </span>
+                  )}
+                </td>
                 <td className="px-3 py-2 text-right text-gray-600 dark:text-gray-400">
                   {formatCurrency(rate.buy, rate.currencyCode, rate.locale)}
                 </td>
@@ -68,7 +85,13 @@ export function RatesTable({ rates, totalIncomeUsd }: RatesTableProps) {
                 </td>
                 {shouldShowConvertedIncome && (
                   <td className="px-3 py-2 text-right font-semibold text-emerald-700 dark:text-emerald-400">
-                    {formatCurrency(totalIncomeUsd * rate.sell, rate.currencyCode, rate.locale)}
+                    {convertUsd(totalIncomeUsd!, rate, operation) === null
+                      ? "No disponible"
+                      : formatCurrency(
+                          convertUsd(totalIncomeUsd!, rate, operation)!,
+                          rate.currencyCode,
+                          rate.locale,
+                        )}
                   </td>
                 )}
               </tr>

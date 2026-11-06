@@ -16,6 +16,9 @@ dist/
 
 # Testing
 coverage/
+output/
+.playwright-cli/
+tsconfig.tsbuildinfo
 
 # Local dev logs
 .codex-dev-server.*.log

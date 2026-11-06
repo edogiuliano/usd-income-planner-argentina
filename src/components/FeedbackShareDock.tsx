@@ -240,7 +240,7 @@ export function FeedbackShareDock() {
   };
 
   return (
-    <div className="fixed bottom-24 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-24 right-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 lg:bottom-6 lg:right-6">
       {showNudge && !isWidgetOpen && (
         <div className="max-w-[18rem] rounded-2xl border border-zinc-200 bg-white/95 p-3 shadow-xl shadow-zinc-950/10 backdrop-blur transition-all dark:border-white/10 dark:bg-[#15171d]/95">
           <div className="flex items-start gap-3">

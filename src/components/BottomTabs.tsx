@@ -1,45 +1,39 @@
 export type AppTab = "calculate" | "project" | "rates" | "settings";
 
-interface BottomTabsProps {
-  activeTab: AppTab;
-  onTabChange: (tab: AppTab) => void;
-}
-
-const TABS: Array<{ id: AppTab; label: string; shortLabel: string; description: string; icon: string }> = [
-  { id: "calculate", label: "Calcular", shortLabel: "Calc", description: "Sueldo actual", icon: "🧮" },
-  { id: "project", label: "Proyectar", shortLabel: "Plan", description: "Meses y PTO", icon: "📈" },
-  { id: "rates", label: "Cotizaciones", shortLabel: "USD", description: "Dólar local", icon: "💱" },
-  { id: "settings", label: "Ajustes", shortLabel: "Ajustes", description: "Ingreso y PTO", icon: "⚙️" },
+const TABS: Array<{ id: AppTab; label: string; icon: string }> = [
+  { id: "calculate", label: "Calcular", icon: "🧮" },
+  { id: "project", label: "Proyectar", icon: "📈" },
+  { id: "rates", label: "Cotizaciones", icon: "💱" },
+  { id: "settings", label: "Ajustes", icon: "⚙️" },
 ];
 
-export function BottomTabs({ activeTab, onTabChange }: BottomTabsProps) {
+export function BottomTabs({
+  activeTab,
+  onTabChange,
+}: {
+  activeTab: AppTab;
+  onTabChange: (tab: AppTab) => void;
+}) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200/80 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 shadow-[0_-18px_40px_-28px_rgba(15,23,42,0.55)] backdrop-blur-xl dark:border-zinc-800 dark:bg-zinc-950/92">
-      <div className="mx-auto grid max-w-2xl grid-cols-4 gap-2">
-        {TABS.map((tab) => {
-          const isActive = tab.id === activeTab;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => onTabChange(tab.id)}
-              className={`rounded-2xl px-2 py-2.5 text-center transition active:scale-[0.98] ${
-                isActive
-                  ? "bg-zinc-950 text-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.8)] dark:bg-zinc-50 dark:text-zinc-950"
-                  : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-              }`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <span className="block text-base leading-none">{tab.icon}</span>
-              <span className="mt-1 block text-xs font-black sm:hidden">{tab.shortLabel}</span>
-              <span className="mt-1 hidden text-sm font-black sm:block">{tab.label}</span>
-              <span className="mt-0.5 hidden text-[11px] font-medium opacity-70 sm:block">
-                {tab.description}
-              </span>
-            </button>
-          );
-        })}
+    <nav
+      aria-label="Secciones principales"
+      className="app-navigation fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 backdrop-blur-xl dark:border-white/10 dark:bg-[#15171d]/95 lg:static lg:border-t-0 lg:border-b lg:px-6 lg:py-2"
+    >
+      <div className="mx-auto grid max-w-7xl grid-cols-4 gap-1 lg:flex lg:gap-2 lg:px-6">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            aria-current={activeTab === tab.id ? "page" : undefined}
+            onClick={() => onTabChange(tab.id)}
+            className={`flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[11px] font-semibold transition lg:min-h-10 lg:flex-row lg:gap-2 lg:px-4 lg:text-sm ${activeTab === tab.id ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300" : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-white/5"}`}
+          >
+            <span aria-hidden="true" className="text-base">
+              {tab.icon}
+            </span>
+            {tab.label}
+          </button>
+        ))}
       </div>
     </nav>
   );

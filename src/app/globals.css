@@ -1,3 +1,160 @@
 @import "tailwindcss";
 
 @variant dark (&:where(.dark, .dark *));
+
+:root {
+  color-scheme: light;
+  --page: #f5f6f7;
+  --surface: #ffffff;
+  --field: #ffffff;
+  --border: #dedee3;
+  --text: #202126;
+  --accent: #047857;
+}
+.dark {
+  color-scheme: dark;
+  --page: #111318;
+  --surface: #191c22;
+  --field: #12151a;
+  --border: #343840;
+  --text: #f4f4f5;
+  --accent: #6ee7b7;
+}
+* {
+  letter-spacing: 0;
+}
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--text);
+}
+button,
+select,
+summary {
+  cursor: pointer;
+}
+button,
+input,
+select,
+textarea {
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms,
+    box-shadow 150ms;
+}
+button:disabled,
+select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+:is(button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+:is(input, select, textarea):focus {
+  border-color: var(--accent);
+}
+.app-shell {
+  background: var(--page);
+  color: var(--text);
+}
+.workspace-section {
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.app-input,
+.income-form input,
+.income-form select,
+.settings-panel input,
+.settings-panel select {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field);
+  color: var(--text);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  box-shadow: none;
+}
+.income-form #rate {
+  padding-left: 2rem;
+}
+.income-form label {
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+.income-form [aria-pressed="true"] {
+  background: #047857;
+  color: white;
+  box-shadow: none;
+}
+.income-form [aria-pressed="false"] {
+  background: var(--field);
+  color: var(--text);
+}
+.income-form [aria-pressed] {
+  min-height: 40px;
+  padding: 0.5rem 0.125rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.income-form [aria-pressed] span {
+  font-size: 0.75rem;
+}
+.income-form [aria-pressed]:hover,
+.period-button:hover {
+  border-color: var(--accent);
+}
+.primary-button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #047857;
+  color: white;
+}
+.primary-button:hover:not(:disabled) {
+  background: #065f46;
+}
+.primary-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.secondary-button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+}
+.secondary-button:hover {
+  background: var(--field);
+  border-color: var(--accent);
+}
+.empty-state {
+  background: var(--field);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.income-value {
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 639px) {
+  .workspace-section {
+    padding: 1.125rem;
+    border-radius: 12px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}

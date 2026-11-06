@@ -83,27 +83,39 @@ async function fetchEndpoint(url: string): Promise<RateApiItem[]> {
   return Array.isArray(data) ? data : [data];
 }
 
-function normalizeRate(
+export function normalizeRate(
   item: RateApiItem,
-  index: number,
+  _index: number,
   config: CountryRatesConfig,
 ): ExchangeRate {
   const name = item.nombre ?? item.nome ?? item.casa ?? item.fuente ?? "Dólar";
   const casa = item.casa ?? item.fuente ?? item.moneda ?? item.moeda ?? name;
-  const sell = item.venta ?? item.venda ?? item.promedio ?? 0;
+  const valid = (value: number | undefined) =>
+    typeof value === "number" && Number.isFinite(value) && value > 0
+      ? value
+      : undefined;
+  const buy = valid(item.compra);
+  const sell = valid(item.venta) ?? valid(item.venda);
+  const reference = valid(item.promedio) ?? buy ?? sell ?? 0;
 
   return {
-    casa: `${casa}-${index}`,
+    casa: casa.toLowerCase(),
     name,
-    buy: item.compra ?? sell,
-    sell,
+    buy: buy ?? reference,
+    sell: sell ?? reference,
+    isReference: buy === undefined || sell === undefined,
     currencyCode: config.currencyCode,
     locale: config.locale,
-    updatedAt: item.fechaActualizacion ?? item.dataAtualizacao ?? new Date().toISOString(),
+    updatedAt:
+      item.fechaActualizacion ??
+      item.dataAtualizacao ??
+      new Date().toISOString(),
   };
 }
 
-export async function fetchExchangeRates(countryCode: CountryCode = "ar"): Promise<ExchangeRate[]> {
+export async function fetchExchangeRates(
+  countryCode: CountryCode = "ar",
+): Promise<ExchangeRate[]> {
   try {
     const config = COUNTRY_RATES_CONFIG[countryCode];
 
@@ -121,7 +133,9 @@ export async function fetchExchangeRates(countryCode: CountryCode = "ar"): Promi
       ];
     }
 
-    const responses = await Promise.all(config.endpoints.map((endpoint) => fetchEndpoint(endpoint)));
+    const responses = await Promise.all(
+      config.endpoints.map((endpoint) => fetchEndpoint(endpoint)),
+    );
     const data = responses.flat();
 
     return data.map((item, index) => normalizeRate(item, index, config));

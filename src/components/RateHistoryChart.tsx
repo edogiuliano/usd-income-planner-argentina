@@ -12,7 +12,8 @@ import {
   YAxis,
 } from "recharts";
 
-type DollarHouse = "oficial" | "blue" | "bolsa" | "contadoconliqui" | "cripto" | "mayorista";
+type DollarHouse =
+  "oficial" | "blue" | "bolsa" | "contadoconliqui" | "cripto" | "mayorista";
 type Period = "7" | "30" | "365";
 
 type RateHistoryPoint = {
@@ -42,6 +43,26 @@ const formatCurrency = (value: number) =>
     currency: "ARS",
     maximumFractionDigits: 2,
   }).format(value);
+
+function HistoryTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{ value?: number }>;
+  label?: string | number;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-zinc-200 bg-white p-3 shadow-lg dark:border-zinc-700 dark:bg-[#191c22]">
+      <p className="mb-1 text-sm font-semibold">{label}</p>
+      <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+        {formatCurrency(payload[0].value ?? 0)}
+      </p>
+    </div>
+  );
+}
 
 export function RateHistoryChart() {
   const [selectedHouse, setSelectedHouse] = useState<DollarHouse>("cripto");
@@ -100,21 +121,6 @@ export function RateHistoryChart() {
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }, [history, selectedPeriod]);
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-800">
-          <p className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">{label}</p>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-400">
-            {formatCurrency(payload[0].value)}
-          </p>
-        </div>
-      );
-    }
-
-    return null;
-  };
-
   return (
     <div className="mt-6">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -124,8 +130,11 @@ export function RateHistoryChart() {
         <div className="flex flex-wrap gap-2">
           <select
             value={selectedHouse}
-            onChange={(event) => setSelectedHouse(event.target.value as DollarHouse)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-900"
+            aria-label="Tipo de dólar del historial"
+            onChange={(event) =>
+              setSelectedHouse(event.target.value as DollarHouse)
+            }
+            className="app-input text-sm"
           >
             {DOLLAR_HOUSES.map((house) => (
               <option key={house.value} value={house.value}>
@@ -136,8 +145,11 @@ export function RateHistoryChart() {
 
           <select
             value={selectedPeriod}
-            onChange={(event) => setSelectedPeriod(event.target.value as Period)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-800 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:ring-blue-900"
+            aria-label="Período del historial"
+            onChange={(event) =>
+              setSelectedPeriod(event.target.value as Period)
+            }
+            className="app-input text-sm"
           >
             {PERIODS.map((period) => (
               <option key={period.value} value={period.value}>
@@ -168,9 +180,20 @@ export function RateHistoryChart() {
 
       {!isLoading && !error && chartData.length > 0 && (
         <div className="h-64 min-h-64 w-full min-w-0 2xl:h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 8, right: 18, left: 8, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
+          <ResponsiveContainer
+            width="100%"
+            height="100%"
+            initialDimension={{ width: 320, height: 256 }}
+          >
+            <LineChart
+              data={chartData}
+              margin={{ top: 8, right: 18, left: 8, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="#e5e7eb"
+              />
               <XAxis
                 dataKey="label"
                 tick={{ fill: "#6a7282", fontSize: 12 }}
@@ -182,14 +205,16 @@ export function RateHistoryChart() {
                 tick={{ fill: "#6a7282", fontSize: 12 }}
                 axisLine={{ stroke: "#e5e7eb" }}
                 tickLine={{ stroke: "#e5e7eb" }}
-                tickFormatter={(value) => `$${Number(value).toLocaleString("es-AR")}`}
+                tickFormatter={(value) =>
+                  `$${Number(value).toLocaleString("es-AR")}`
+                }
                 width={72}
               />
-              <Tooltip content={<CustomTooltip />} />
+              <Tooltip content={<HistoryTooltip />} />
               <Line
                 type="monotone"
                 dataKey="venta"
-                stroke="#2563eb"
+                stroke="#059669"
                 strokeWidth={3}
                 dot={false}
                 activeDot={{ r: 5 }}
