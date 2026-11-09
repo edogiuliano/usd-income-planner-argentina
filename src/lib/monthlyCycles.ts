@@ -5,6 +5,7 @@ import {
   format,
   getDaysInMonth,
   isValid,
+  max,
   min,
   parseISO,
   startOfMonth,
@@ -23,16 +24,22 @@ export function cycleFromStartDay(day: number): MonthlyCycle {
     : { ...DEFAULT_MONTHLY_CYCLE };
 }
 
-export function cycleFromEndDay(day: number | "last"): MonthlyCycle {
-  return day === "last" || day === 31
-    ? { ...DEFAULT_MONTHLY_CYCLE }
-    : cycleFromStartDay(day + 1);
-}
-
 export function normalizeMonthlyCycle(value: unknown): MonthlyCycle {
   if (!value || typeof value !== "object") return { ...DEFAULT_MONTHLY_CYCLE };
   const cycle = value as Partial<MonthlyCycle>;
-  return cycleFromStartDay(cycle.startDay ?? 1);
+  const fallback = cycleFromStartDay(cycle.startDay ?? 1);
+  const endDay = cycle.endDay;
+  return {
+    startDay: fallback.startDay,
+    endDay:
+      endDay === "last" ||
+      (typeof endDay === "number" &&
+        Number.isInteger(endDay) &&
+        endDay >= 1 &&
+        endDay <= 31)
+        ? endDay
+        : fallback.endDay,
+  };
 }
 
 export function readMonthlyCycle(raw: string | null): MonthlyCycle {
@@ -45,24 +52,29 @@ export function readMonthlyCycle(raw: string | null): MonthlyCycle {
 
 const toIsoDate = (date: Date) => format(date, "yyyy-MM-dd");
 
-// Closing dates are the shared boundary: deriving each start from the previous
-// close avoids independent day-clamping overlaps in February and 30-day months.
-function closingDate(month: Date, cycle: MonthlyCycle) {
+function dateInMonth(month: Date, day: number | "last") {
   const first = startOfMonth(month);
-  const day =
-    cycle.endDay === "last"
+  const actualDay =
+    day === "last"
       ? getDaysInMonth(first)
-      : Math.min(cycle.endDay, getDaysInMonth(first));
-  return addDays(first, day - 1);
+      : Math.min(day, getDaysInMonth(first));
+  return addDays(first, actualDay - 1);
 }
 
 export function getCycleForClosingMonth(month: Date, config: MonthlyCycle) {
   const cycle = normalizeMonthlyCycle(config);
+  const previousMonth = addMonths(startOfMonth(month), -1);
+  const crossesMonth = cycle.endDay !== "last" && cycle.startDay > cycle.endDay;
+  // Short months can clip both bounds to the same date; never share a paid day.
+  const start = crossesMonth
+    ? max([
+        dateInMonth(previousMonth, cycle.startDay),
+        addDays(dateInMonth(previousMonth, cycle.endDay), 1),
+      ])
+    : dateInMonth(month, cycle.startDay);
   return {
-    startDate: toIsoDate(
-      addDays(closingDate(addMonths(startOfMonth(month), -1), cycle), 1),
-    ),
-    endDate: toIsoDate(closingDate(month, cycle)),
+    startDate: toIsoDate(start),
+    endDate: toIsoDate(dateInMonth(month, cycle.endDay)),
   };
 }
 
@@ -74,7 +86,7 @@ export function getMonthlyCycleContaining(
   if (!isValid(target)) throw new Error("Invalid cycle date");
   const cycle = normalizeMonthlyCycle(config);
   const closingMonth =
-    target > closingDate(target, cycle)
+    target > dateInMonth(target, cycle.endDay)
       ? addMonths(startOfMonth(target), 1)
       : target;
   return getCycleForClosingMonth(closingMonth, cycle);
@@ -97,10 +109,18 @@ export function getMonthlyQuickPeriod(
   config: MonthlyCycle,
   offset = 0,
 ) {
-  const current = getMonthlyCycleContaining(today, config);
+  const cycle = normalizeMonthlyCycle(config);
+  // Same-month ranges select the calendar month, even after their closing day.
+  if (cycle.endDay === "last" || cycle.startDay <= cycle.endDay) {
+    return getCycleForClosingMonth(
+      addMonths(startOfMonth(parseISO(today)), offset),
+      cycle,
+    );
+  }
+  const current = getMonthlyCycleContaining(today, cycle);
   return offset === 0
     ? current
-    : shiftMonthlyCycle(current.startDate, config, offset);
+    : shiftMonthlyCycle(current.startDate, cycle, offset);
 }
 
 export function getWorkCycleFraction(
@@ -115,10 +135,14 @@ export function getWorkCycleFraction(
   while (current <= end) {
     const cycle = getMonthlyCycleContaining(toIsoDate(current), config);
     const cycleEnd = parseISO(cycle.endDate);
+    const cycleStart = parseISO(cycle.startDate);
+    const segmentStart = max([current, cycleStart]);
     const segmentEnd = min([cycleEnd, end]);
-    const fullDays =
-      differenceInCalendarDays(cycleEnd, parseISO(cycle.startDate)) + 1;
-    cycles += (differenceInCalendarDays(segmentEnd, current) + 1) / fullDays;
+    if (segmentStart <= segmentEnd) {
+      const fullDays = differenceInCalendarDays(cycleEnd, cycleStart) + 1;
+      cycles +=
+        (differenceInCalendarDays(segmentEnd, segmentStart) + 1) / fullDays;
+    }
     current = addDays(cycleEnd, 1);
   }
   return cycles;

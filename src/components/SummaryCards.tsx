@@ -1,9 +1,10 @@
-import { formatCurrency, formatNumber, formatUsd } from "@/lib/formatters";
+import { formatNumber, formatUsd } from "@/lib/formatters";
+import { WithdrawalEstimate } from "@/components/WithdrawalEstimate";
 import {
-  convertUsd,
-  getConversionRate,
-  operationLabel,
-} from "@/lib/conversion";
+  getAppliedWithdrawalFeesUsd,
+  withdrawalMoney,
+  type ReceiptEstimate,
+} from "@/lib/withdrawals/presentation";
 import type {
   CycleDays,
   ExchangeOperation,
@@ -20,6 +21,9 @@ interface SummaryCardsProps {
   operation: ExchangeOperation;
   isLoadingRates: boolean;
   ratesError: string | null;
+  receipt: ReceiptEstimate | null;
+  ready: boolean;
+  unavailable: boolean;
 }
 
 export function SummaryCards({
@@ -30,10 +34,17 @@ export function SummaryCards({
   operation,
   isLoadingRates,
   ratesError,
+  receipt,
+  ready,
+  unavailable,
 }: SummaryCardsProps) {
-  const converted = primaryRate
-    ? convertUsd(incomeResult.totalIncomeUsd, primaryRate, operation)
-    : null;
+  const discounts = [
+    ["Descuento VTO incluido", incomeResult.unpaidLeaveDeductionUsd],
+    [
+      "Comisiones de retiro incluidas",
+      receipt ? getAppliedWithdrawalFeesUsd(receipt.result) : 0,
+    ],
+  ] as const;
   const statistics = [
     ["📆", "Días trabajados", formatNumber(cycleDays.workedDays)],
     ["🏖️", "Francos", formatNumber(cycleDays.freeDays)],
@@ -60,49 +71,29 @@ export function SummaryCards({
   ];
   return (
     <div>
-      <div className="income-totals grid min-w-0 gap-6 border-b border-zinc-200 pb-6 dark:border-white/10 xl:grid-cols-2">
-        <div className="min-w-0" data-income="total-usd">
-          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            💵 Ingreso total USD
-          </p>
-          <p className="income-value mt-2 text-3xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">
-            {formatUsd(incomeResult.totalIncomeUsd)}
-          </p>
-        </div>
-        {primaryRate?.currencyCode !== "USD" && (
-          <div className="min-w-0" data-income="converted">
-            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-              💱 Equivalente en {primaryRate?.currencyCode ?? "moneda local"}
-            </p>
-            <p className="income-value mt-2 text-2xl font-bold tabular-nums">
-              {converted !== null && primaryRate
-                ? formatCurrency(
-                    converted,
-                    primaryRate.currencyCode,
-                    primaryRate.locale,
-                  )
-                : "—"}
-            </p>
-            <p
-              className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400"
-              role="status"
-            >
-              {isLoadingRates
-                ? "Actualizando cotización..."
-                : (ratesError ??
-                  (primaryRate
-                    ? `${primaryRate.name} · ${primaryRate.isReference ? "Referencia única" : operationLabel(operation)} · ${formatCurrency(getConversionRate(primaryRate, operation) ?? 0, primaryRate.currencyCode, primaryRate.locale)} / USD`
-                    : "Cotización no disponible"))}
-            </p>
+      <WithdrawalEstimate
+        grossUsd={incomeResult.totalIncomeUsd}
+        receipt={receipt}
+        primaryRate={primaryRate}
+        operation={operation}
+        isLoadingRates={isLoadingRates}
+        ratesError={ratesError}
+        ready={ready}
+        unavailable={unavailable}
+      />
+      {discounts
+        .filter(([, amount]) => amount > 0)
+        .map(([label, amount]) => (
+          <div
+            key={label}
+            className="mt-3 flex flex-wrap justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            <span>{label}</span>
+            <strong className="tabular-nums">
+              −{withdrawalMoney(amount, "USD")}
+            </strong>
           </div>
-        )}
-      </div>
-      {incomeResult.unpaidLeaveDeductionUsd > 0 && (
-        <div className="mt-4 flex flex-wrap justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
-          <span>Descuento VTO incluido</span>
-          <strong>−{formatUsd(incomeResult.unpaidLeaveDeductionUsd)}</strong>
-        </div>
-      )}
+        ))}
       <dl className="mt-6 grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
         {statistics.map(([icon, label, value]) => (
           <div key={label} className="min-w-0">

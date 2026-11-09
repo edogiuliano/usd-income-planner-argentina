@@ -5,8 +5,6 @@ import { addDays, format } from "date-fns";
 import { parseSavedCalculation, restoreSavedForm } from "@/lib/formState";
 import { parseDayCountInput } from "@/lib/inputNumbers";
 import {
-  cycleFromEndDay,
-  cycleFromStartDay,
   DEFAULT_MONTHLY_CYCLE,
   getMonthlyQuickPeriod,
   MONTHLY_CYCLE_STORAGE_KEY,
@@ -496,9 +494,10 @@ export function IncomeForm({
               id="cycleStartDay"
               className="mt-1 w-full"
               value={monthlyCycle.startDay}
-              onChange={(event) =>
-                setMonthlyCycle(cycleFromStartDay(Number(event.target.value)))
-              }
+              onChange={(event) => {
+                const startDay = Number(event.target.value);
+                setMonthlyCycle((previous) => ({ ...previous, startDay }));
+              }}
             >
               {Array.from({ length: 31 }, (_, index) => (
                 <option key={index + 1} value={index + 1}>
@@ -513,18 +512,16 @@ export function IncomeForm({
               id="cycleEndDay"
               className="mt-1 w-full"
               value={monthlyCycle.endDay}
-              onChange={(event) =>
-                setMonthlyCycle(
-                  cycleFromEndDay(
-                    event.target.value === "last"
-                      ? "last"
-                      : Number(event.target.value),
-                  ),
-                )
-              }
+              onChange={(event) => {
+                const endDay =
+                  event.target.value === "last"
+                    ? "last"
+                    : Number(event.target.value);
+                setMonthlyCycle((previous) => ({ ...previous, endDay }));
+              }}
             >
               <option value="last">Fin de mes</option>
-              {Array.from({ length: 30 }, (_, index) => (
+              {Array.from({ length: 31 }, (_, index) => (
                 <option key={index + 1} value={index + 1}>
                   {index + 1}
                 </option>
@@ -533,7 +530,7 @@ export function IncomeForm({
           </label>
         </div>
         <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-          En meses cortos, el cierre pasa al último día.
+          En meses cortos, las fechas se ajustan al último día disponible.
         </p>
       </fieldset>
 

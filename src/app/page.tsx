@@ -10,6 +10,7 @@ import { RateHistoryChart } from "@/components/RateHistoryChart";
 import { RatesTable } from "@/components/RatesTable";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { SummaryCards } from "@/components/SummaryCards";
+import { WithdrawalSimulator } from "@/components/WithdrawalSimulator";
 import { calculateIncome } from "@/lib/calculator";
 import { getCycleDays } from "@/lib/dates";
 import { fetchExchangeRates } from "@/lib/rates";
@@ -202,6 +203,7 @@ export default function Home() {
       "preferred-rate-casa",
       "exchange-operation",
       "pto-onboarding-v1-complete",
+      "withdrawals-v1",
     ]) {
       localStorage.removeItem(`usd-planner-${key}`);
     }
@@ -289,7 +291,9 @@ export default function Home() {
               aria-live="polite"
             >
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-xl font-semibold">Sueldo estimado</h2>
+                <h2 className="text-xl font-semibold">
+                  Total estimado a recibir
+                </h2>
                 {incomeResult && (
                   <button
                     type="button"
@@ -301,14 +305,27 @@ export default function Home() {
                 )}
               </div>
               {cycleDays && incomeResult ? (
-                <SummaryCards
-                  cycleDays={cycleDays}
-                  incomeResult={incomeResult}
-                  paymentType={calculationData?.paymentType}
+                <WithdrawalSimulator
+                  key={resetVersion}
+                  grossUsd={incomeResult.totalIncomeUsd}
+                  country={selectedCountry}
+                  countryName={countryName}
                   primaryRate={primaryRate}
                   operation={operation}
-                  isLoadingRates={isLoadingRates}
-                  ratesError={ratesError}
+                  renderSummary={(receipt, ready, unavailable) => (
+                    <SummaryCards
+                      cycleDays={cycleDays}
+                      incomeResult={incomeResult}
+                      paymentType={calculationData?.paymentType}
+                      primaryRate={primaryRate}
+                      operation={operation}
+                      isLoadingRates={isLoadingRates}
+                      ratesError={ratesError}
+                      receipt={receipt}
+                      ready={ready}
+                      unavailable={unavailable}
+                    />
+                  )}
                 />
               ) : (
                 <div className="empty-state py-16 text-center">
@@ -422,7 +439,7 @@ export default function Home() {
           />
         )}
         <footer className="mx-auto mt-8 max-w-3xl text-center text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-          v1.1 · Estimación orientativa. Las cotizaciones pueden variar. No
+          v1.2 · Estimación orientativa. Las cotizaciones pueden variar. No
           reemplaza políticas internas, contratos ni asesoría financiera.
         </footer>
       </div>

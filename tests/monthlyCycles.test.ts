@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addDays, differenceInCalendarDays, format, parseISO } from "date-fns";
 import {
-  cycleFromEndDay,
   cycleFromStartDay,
   DEFAULT_MONTHLY_CYCLE,
   getMonthlyCycleContaining,
@@ -49,14 +48,75 @@ describe("monthly work cycles", () => {
       getMonthlyQuickPeriod("2026-12-06", DEFAULT_MONTHLY_CYCLE, 1),
     ).toEqual({ startDate: "2027-01-01", endDate: "2027-01-31" });
   });
-  it("links the two settings into complete monthly cycles", () => {
-    expect(cycleFromEndDay(25)).toEqual(custom);
-    expect(cycleFromStartDay(1)).toEqual(DEFAULT_MONTHLY_CYCLE);
-    expect(cycleFromEndDay("last")).toEqual(DEFAULT_MONTHLY_CYCLE);
-    expect(cycleFromEndDay(31)).toEqual(DEFAULT_MONTHLY_CYCLE);
+  it("restores independent days and still accepts legacy and invalid settings", () => {
     expect(readMonthlyCycle(JSON.stringify(custom))).toEqual(custom);
+    expect(readMonthlyCycle('{"startDay":10,"endDay":20}')).toEqual({
+      startDay: 10,
+      endDay: 20,
+    });
+    expect(readMonthlyCycle('{"startDay":31,"endDay":31}')).toEqual({
+      startDay: 31,
+      endDay: 31,
+    });
+    expect(readMonthlyCycle('{"startDay":27,"endDay":26}')).toEqual({
+      startDay: 27,
+      endDay: 26,
+    });
+    expect(readMonthlyCycle('{"startDay":26}')).toEqual(custom);
     expect(readMonthlyCycle("bad")).toEqual(DEFAULT_MONTHLY_CYCLE);
     expect(readMonthlyCycle('{"startDay":32}')).toEqual(DEFAULT_MONTHLY_CYCLE);
+  });
+  it("uses a 27–26 cycle across years without mutating either bound", () => {
+    const config = Object.freeze({ startDay: 27, endDay: 26 });
+    expect(getMonthlyQuickPeriod("2026-12-27", config)).toEqual({
+      startDate: "2026-12-27",
+      endDate: "2027-01-26",
+    });
+    expect(getMonthlyQuickPeriod("2026-12-27", config, 1)).toEqual({
+      startDate: "2027-01-27",
+      endDate: "2027-02-26",
+    });
+    expect(config).toEqual({ startDay: 27, endDay: 26 });
+  });
+  it("uses the named calendar month for an independent same-month range", () => {
+    const config = { startDay: 10, endDay: 20 };
+    expect(getMonthlyQuickPeriod("2026-12-29", config)).toEqual({
+      startDate: "2026-12-10",
+      endDate: "2026-12-20",
+    });
+    expect(getMonthlyQuickPeriod("2026-12-29", config, 1)).toEqual({
+      startDate: "2027-01-10",
+      endDate: "2027-01-20",
+    });
+  });
+  it.each([
+    ["2026", "28"],
+    ["2024", "29"],
+  ])(
+    "clips both bounds in February %s without rewriting them",
+    (year, lastDay) => {
+      const config = { startDay: 30, endDay: 31 };
+      expect(getMonthlyQuickPeriod(`${year}-02-15`, config)).toEqual({
+        startDate: `${year}-02-${lastDay}`,
+        endDate: `${year}-02-${lastDay}`,
+      });
+      expect(getMonthlyQuickPeriod(`${year}-02-15`, config, 1)).toEqual({
+        startDate: `${year}-03-30`,
+        endDate: `${year}-03-31`,
+      });
+    },
+  );
+  it("keeps a gap between independent cross-month cycles unless clipping would overlap", () => {
+    const config = { startDay: 31, endDay: 29 };
+    expect(getMonthlyQuickPeriod("2026-02-10", config)).toEqual({
+      startDate: "2026-01-31",
+      endDate: "2026-02-28",
+    });
+    expect(getMonthlyQuickPeriod("2026-02-10", config, 1)).toEqual({
+      startDate: "2026-03-01",
+      endDate: "2026-03-29",
+    });
+    expect(getWorkCycleFraction("2026-01-30", "2026-01-30", config)).toBe(0);
   });
   it.each([1, 26, 29, 30, 31])(
     "keeps start day %i cycles contiguous through short months and leap years",
@@ -146,6 +206,21 @@ describe("fixed salary by work cycle", () => {
       getWorkCycleFraction("2026-01-15", "2026-03-10", DEFAULT_MONTHLY_CYCLE),
     ).toBeCloseTo(17 / 31 + 1 + 10 / 31);
   });
+  it("prorates only the days in independent windows, with one salary for each complete cycle", () => {
+    const config = { startDay: 10, endDay: 20 };
+    expect(
+      getWorkCycleFraction("2026-11-15", "2026-12-10", config),
+    ).toBeCloseTo(7 / 11);
+    expect(getWorkCycleFraction("2026-11-01", "2026-12-31", config)).toBe(2);
+    expect(
+      calculateIncome({
+        ...input,
+        monthlyCycle: config,
+        startDate: "2026-11-10",
+        endDate: "2026-11-20",
+      }).totalIncomeUsd,
+    ).toBe(3000);
+  });
 });
 
 describe("cycle persistence and projections", () => {
@@ -176,6 +251,37 @@ describe("cycle persistence and projections", () => {
     expect(calculateIncome({ ...data, workedDays: 20 }).baseIncomeUsd).toBe(
       3000,
     );
+  });
+  it("restores and projects same-month windows independently across years", () => {
+    const monthlyCycle = { startDay: 10, endDay: 20 };
+    const restored = restoreSavedForm(
+      JSON.stringify(saved),
+      null,
+      JSON.stringify(monthlyCycle),
+    );
+    expect(parseSavedCalculation(restored)?.monthlyCycle).toEqual(monthlyCycle);
+    const items = generateMonthlyProjections({
+      ...getMonthlyQuickPeriod("2026-12-29", monthlyCycle),
+      monthlyCycle,
+      fromDate: "2026-12-29",
+      horizon: "3",
+      hireDate: "2026-01-01",
+      paymentType: "monthly",
+      rate: 3000,
+      hoursPerDay: 8,
+      freeWeekdays: [0, 6],
+    });
+    expect(
+      items.map(({ startDate, endDate, income }) => [
+        startDate,
+        endDate,
+        income.totalIncomeUsd,
+      ]),
+    ).toEqual([
+      ["2026-12-10", "2026-12-20", 3000],
+      ["2027-01-10", "2027-01-20", 3000],
+      ["2027-02-10", "2027-02-20", 3000],
+    ]);
   });
   it.each([1, 26, 29, 30, 31])(
     "projects complete start-day %i cycles with no gaps and a whole salary each",

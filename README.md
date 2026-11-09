@@ -4,11 +4,22 @@ Web app for freelancers, contractors, and remote workers in LATAM who earn in US
 
 Live demo: https://calculadora-ingresos-usd.vercel.app/
 
+## Version 1.2
+
+- Optional withdrawal simulator inside the salary results, closed by default. The gross salary calculation is unchanged.
+- Verified country/provider/method routes, a read-only fee breakdown, and automatic recommendations when known charges and exchange costs allow a comparison on a common basis.
+- Deel and Payoneer routes are enabled only where documented. Papaya Global is listed with availability pending verification, not invented destinations or fees. Some brand logos require permission and use a generic fallback.
+- No account connections, credentials, or payment execution. Public market rates value the USD equivalent; they do not pretend to be provider execution quotes.
+
+Coverage, sources, API access requirements, asset permissions and remaining limitations: [Withdrawal simulator](docs/withdrawals-v1.2.md).
+
+The final v1.1 date-controls adjustment was committed and pushed first as `4a8320f` on `main`.
+
 ## Version 1.1
 
 - Compact header, top desktop navigation and four mobile tabs; total USD and local income lead the summary.
-- Configurable monthly work cycles (default 1 through month-end). Start and close days stay linked, such as 26-25. "Este mes" picks the cycle containing today; "Proximo mes" picks the following cycle. Manual date edits and the 7/14-day shortcuts do not change the saved cycle.
-- Fixed salary proration follows the configured work cycle: `monthly salary * included calendar days / total calendar days in that cycle`. Complete cycles contribute one salary. Short-month closing dates adjust automatically; the next cycle starts the following day, without gaps or overlaps.
+- Configurable monthly work cycles (default 1 through month-end). Start and close days are independent. For same-month ranges, the shortcuts choose the current and next calendar month; for cross-month ranges, they choose the current or upcoming cycle and its successor. Manual dates and shortcuts never change the saved bounds.
+- Fixed salary proration follows the configured work cycle: `monthly salary * included calendar days / total calendar days in that cycle`. Complete cycles contribute one salary. Short months clip unavailable dates without overlapping cycles. Days outside a configured cycle do not contribute to its proration.
 - PTO remains paid. VTO is deducted once, proportionally to scheduled workdays, from the prorated base. Manual leave applies to the initial projection cycle only; calendar vacations are additional days.
 - The main form only accepts VTO. PTO from older saved calculations is retained with a removable notice; new vacation PTO is managed through Projections and Settings.
 - Selling USD uses the entity's buy quote; buying USD uses its sell quote. Single-quote sources are explicitly marked as references. No fees or net-income calculations are included.
