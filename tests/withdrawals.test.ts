@@ -19,17 +19,19 @@ import type {
   WithdrawalRoute,
   WithdrawalStep,
 } from "../src/types/withdrawals";
+import { fixtureRoute, fixtureSteps } from "./fixtures/withdrawal-routes";
 
-const route = withdrawalCatalog.routes.find(
-  (route) => route.id === "deel-payoneer-santander-ar",
-)!;
+const route = fixtureRoute("deel-payoneer-santander-ar")!;
+const reception = { "payoneer-reception": { fixed: 0 } };
 const estimate = (id: string, scenario = {}, usdValues = {}) => {
-  const route = withdrawalCatalog.routes.find((item) => item.id === id)!;
+  const fixture = fixtureRoute(id);
+  const route =
+    fixture ?? withdrawalCatalog.routes.find((item) => item.id === id)!;
   return estimateWithdrawal({
     route,
     country: route.countries[0],
     grossUsd: 1000,
-    steps: getRouteSteps(route),
+    steps: fixture ? fixtureSteps(fixture) : getRouteSteps(route),
     scenario,
     usdValues,
     asOfDate: "2026-11-06",
@@ -80,11 +82,11 @@ describe("withdrawal fees", () => {
     );
   });
   it("overrides a published fee without charging it twice", () => {
-    const result = estimate("payoneer-santander-ar", {
-      fees: { "payoneer-santander": { percent: 2, fixed: 5 } },
+    const result = estimate(route.id, {
+      fees: { ...reception, "payoneer-santander": { percent: 2, fixed: 5 } },
     });
-    expect(result.netUsd).toBe(975);
-    expect(result.totalFeeUsd).toBe(25);
+    expect(result.netUsd).toBe(963.24);
+    expect(result.totalFeeUsd).toBe(36.76);
   });
   it("never resolves a conflicting tariff without user input", () => {
     expect(estimate("deel-astropay-usd").complete).toBe(false);
@@ -99,41 +101,45 @@ describe("withdrawal fees", () => {
 describe("withdrawal conversions", () => {
   it("keeps destination amount and USD valuation distinct, including FX spread", () => {
     const result = estimate(
-      "payoneer-bitso-ar",
-      { rates: { "usd-ars": 1400 } },
+      "deel-payoneer-bitso-ar",
+      { fees: reception, rates: { "usd-ars": 1400 } },
       { ARS: 1 / 1500 },
     );
-    expect(result.finalAmount).toBe(1359400);
-    expect(result.netUsd).toBe(906.27);
-    expect(result.totalFeeUsd).toBe(29);
-    expect(result.fxDifferenceUsd).toBe(64.73);
-    expect(result.totalDiscountUsd).toBe(93.73);
+    expect(result.finalAmount).toBe(1343090);
+    expect(result.netUsd).toBe(895.39);
+    expect(result.totalFeeUsd).toBe(40.65);
+    expect(result.fxDifferenceUsd).toBe(63.96);
+    expect(result.totalDiscountUsd).toBe(104.61);
   });
   it("requires the route's own quote, not a market reference alone", () => {
     expect(
-      estimate("payoneer-bitso-ar", {}, { ARS: 1 / 1500 }).netUsd,
+      estimate("deel-payoneer-bitso-ar", { fees: reception }, { ARS: 1 / 1500 })
+        .netUsd,
     ).toBeNull();
     expect(
-      estimate("payoneer-bitso-ar", { rates: { "usd-ars": 1400 } }).netUsd,
+      estimate("deel-payoneer-bitso-ar", {
+        fees: reception,
+        rates: { "usd-ars": 1400 },
+      }).netUsd,
     ).toBeNull();
   });
-  it("does not confuse ARQ USDc, USD cash, or USDC", () => {
+  it("does not confuse ARQ USDs, USD cash, or USDC", () => {
     const result = estimate("deel-arq-instant-ar", {
-      rates: { "usd-usdc-arq": 1 },
-      usdValues: { USDc: 1 },
+      rates: { "usd-usds-arq": 1 },
+      usdValues: { USDs: 1 },
     });
-    expect(result.route.currency).toBe("USDc");
+    expect(result.route.currency).toBe("USDs");
     expect(result.finalAmount).toBe(989.5);
     expect(result.totalFeeUsd).toBe(10.5);
     expect(
-      estimate("deel-arq-instant-ar", { rates: { "usd-usdc-arq": 1 } })
+      estimate("deel-arq-instant-ar", { rates: { "usd-usds-arq": 1 } })
         .complete,
     ).toBe(false);
   });
   it("supports fees in the intermediate currency", () => {
     const result = estimate("deel-arq-standard-ar", {
-      rates: { "usd-usdc-arq": 0.99 },
-      usdValues: { USDc: 1 },
+      rates: { "usd-usds-arq": 0.99 },
+      usdValues: { USDs: 1 },
     });
     expect(result.finalAmount).toBe(982.05);
     expect(result.totalFeeUsd).toBe(8);
@@ -141,11 +147,11 @@ describe("withdrawal conversions", () => {
   });
   it("cannot replace the USD base valuation", () => {
     const result = estimate(
-      "payoneer-santander-ar",
+      "deel-instant-card-mx-usd",
       { usdValues: { USD: 50 } },
       { USD: 30 },
     );
-    expect(result.netUsd).toBe(967);
+    expect(result.netUsd).toBe(985);
   });
   it("supports multiple conversions in sequence", () => {
     const steps: WithdrawalStep[] = [
@@ -196,7 +202,7 @@ describe("withdrawal safeguards", () => {
       route,
       grossUsd: 49,
       country: "ar" as const,
-      steps: getRouteSteps(route),
+      steps: fixtureSteps(route),
       asOfDate: "2026-11-06",
     };
     expect(estimateWithdrawal(input).complete).toBe(false);
@@ -205,8 +211,8 @@ describe("withdrawal safeguards", () => {
     ).toBe(false);
   });
   it("blocks a charge larger than the balance rather than clamping it to zero", () => {
-    const result = estimate("payoneer-santander-ar", {
-      fees: { "payoneer-santander": { fixed: 1001 } },
+    const result = estimate(route.id, {
+      fees: { ...reception, "payoneer-santander": { fixed: 1001 } },
     });
     expect(result.finalAmount).toBeNull();
     expect(result.issues.join()).toContain("saldo no alcanza");
@@ -228,45 +234,50 @@ describe("withdrawal safeguards", () => {
     ).toBe(false);
   });
   it("stops using older catalog fees until the user confirms current costs", () => {
-    const currentRoute = withdrawalCatalog.routes.find(
-      (item) => item.id === "payoneer-santander-ar",
-    )!;
+    const currentRoute = fixtureRoute("deel-instant-card-mx-usd")!;
     const base = {
       route: currentRoute,
       grossUsd: 1000,
-      country: "ar" as const,
-      steps: getRouteSteps(currentRoute),
+      country: "mx" as const,
+      steps: fixtureSteps(currentRoute),
       asOfDate: "2027-03-01",
     };
     expect(estimateWithdrawal(base).complete).toBe(false);
     expect(
       estimateWithdrawal({
         ...base,
-        scenario: { fees: { "payoneer-santander": { percent: 3.3 } } },
+        scenario: { fees: { "deel-instant-card": { percent: 2, max: 15 } } },
       }).netUsd,
-    ).toBe(967);
+    ).toBe(985);
   });
   it("does not rank missing costs or different payout currencies", () => {
     const pending = estimate(route.id);
-    const complete = estimate("payoneer-santander-ar");
+    const complete = estimate(route.id, { fees: reception });
     const ars = estimate(
-      "payoneer-bitso-ar",
-      { rates: { "usd-ars": 1400 } },
+      "deel-payoneer-bitso-ar",
+      { fees: reception, rates: { "usd-ars": 1400 } },
       { ARS: 1 / 1500 },
     );
     expect(
       rankWithdrawals([pending, complete, ars], "USD").map(
         (item) => item.route.id,
       ),
-    ).toEqual(["payoneer-santander-ar"]);
+    ).toEqual([route.id]);
   });
-  it("includes only explicitly catalogued country/provider combinations", () => {
-    expect(getWithdrawalRoutes("cl", "deel")).toEqual([]);
-    expect(getWithdrawalRoutes("ar", "papaya")).toEqual([]);
-    expect(getWithdrawalRoutes("other", "payoneer")).toEqual([]);
+  it("includes only Deel routes with supported or conditional country coverage", () => {
+    expect(getWithdrawalRoutes("other")).toEqual([]);
+    expect(getWithdrawalRoutes("br").map((item) => item.destination)).toContain(
+      "pix",
+    );
+    expect(getWithdrawalRoutes("mx").map((item) => item.destination)).toContain(
+      "revolut",
+    );
+    expect(getWithdrawalRoutes("cl").map((item) => item.id)).toContain(
+      "deel-local-bank-cl",
+    );
     expect(
-      getWithdrawalRoutes("br", "deel").map((item) => item.destination),
-    ).toContain("pix");
+      withdrawalCatalog.routes.every((item) => item.path[0] === "deel"),
+    ).toBe(true);
   });
   it("catalog steps and sources are internally consistent", () => {
     expect(new Set(withdrawalCatalog.routes.map((item) => item.id)).size).toBe(
@@ -280,26 +291,34 @@ describe("withdrawal safeguards", () => {
         for (const id of step.sourceIds)
           expect(
             withdrawalCatalog.sources.some(
-              (item) => item.id === id && item.url.startsWith("https://"),
+              (item) =>
+                item.id === id &&
+                (!item.url || item.url.startsWith("https://")),
             ),
           ).toBe(true);
-        if (step.feeStatus === "official")
-          expect(isValidFee(step.fee)).toBe(true);
+        if (step.feeStatus === "official" || step.feeStatus === "listed") {
+          expect(
+            step.feeTiers
+              ? step.feeTiers.every(({ fee }) => isValidFee(fee))
+              : isValidFee(step.fee),
+          ).toBe(true);
+        }
       }
       expect(currency).toBe(route.currency);
     }
   });
   it("restores per-country scenarios and ignores invalid or stale route IDs", () => {
-    const key = scenarioKey("ar", route.id);
+    const routeId = "deel-arq-instant-ar";
+    const key = scenarioKey("ar", routeId);
     const saved = restoreWithdrawalPreferences(
       JSON.stringify({
         provider: "payoneer",
-        selections: { "ar:deel": route.id, "cl:deel": route.id },
+        selections: { "ar:deel": routeId, "cl:deel": routeId },
         scenarios: {
           [key]: {
             fees: {
-              "deel-payoneer": { fixed: -5 },
-              "payoneer-reception": { fixed: 0 },
+              "listed-arq": { fixed: -5 },
+              "arq-usds-fee": { fixed: 3 },
             },
             rates: { x: 1 },
             usdValues: { USD: 20, EUR: 1.1 },
@@ -307,25 +326,30 @@ describe("withdrawal safeguards", () => {
         },
       }),
     );
-    expect(saved.provider).toBe("payoneer");
-    expect(saved.selections["ar:deel"]).toBe(route.id);
-    expect(saved.selections["cl:deel"]).toBeUndefined();
-    expect(saved.scenarios[key].fees["deel-payoneer"]).toBeUndefined();
-    expect(saved.scenarios[key].fees["payoneer-reception"]).toEqual({
-      fixed: 0,
+    expect(saved).not.toHaveProperty("provider");
+    expect(saved.selections.ar).toBe(routeId);
+    expect(saved.selections.cl).toBe("");
+    expect(saved.scenarios[key].fees["listed-arq"]).toBeUndefined();
+    expect(saved.scenarios[key].fees["arq-usds-fee"]).toEqual({
+      fixed: 3,
     });
     expect(saved.scenarios[key].usdValues.USD).toBeUndefined();
-    expect(restoreWithdrawalPreferences("broken").provider).toBe("deel");
+    expect(restoreWithdrawalPreferences("broken")).toEqual({
+      selections: {},
+      scenarios: {},
+    });
   });
   it("persists an explicitly unconfirmed override instead of silently restoring the official fee", () => {
-    const id = "payoneer-santander-ar";
+    const id = "deel-arq-instant-ar";
     const key = scenarioKey("ar", id);
     const saved = restoreWithdrawalPreferences(
       JSON.stringify({
-        scenarios: { [key]: { fees: { "payoneer-santander": null } } },
+        scenarios: {
+          [key]: { fees: { "listed-arq": null } },
+        },
       }),
     );
-    expect(saved.scenarios[key].fees["payoneer-santander"]).toBeNull();
+    expect(saved.scenarios[key].fees["listed-arq"]).toBeNull();
     expect(estimate(id, saved.scenarios[key]).complete).toBe(false);
   });
 });

@@ -1,5 +1,9 @@
 import { formatCurrency } from "@/lib/formatters";
-import { estimateWithdrawal, roundMoney } from "@/lib/withdrawals/engine";
+import {
+  estimateWithdrawal,
+  estimateWithdrawalCases,
+  roundMoney,
+} from "@/lib/withdrawals/engine";
 import { getConversionRate } from "@/lib/conversion";
 import { getRouteSteps } from "@/lib/withdrawals/catalog";
 import type { CountryCode, ExchangeOperation, ExchangeRate } from "@/types";
@@ -9,13 +13,14 @@ import type {
   WithdrawalScenario,
 } from "@/types/withdrawals";
 
-const nominalDollarAssets = ["USDC", "USDc", "USDs"];
+const nominalDollarAssets = ["USDC", "USDT", "USDc", "USDs"];
 
 export type ReceiptEstimate = {
   result: WithdrawalResult;
   usdValues: Record<string, number>;
   referenceRates: Record<string, number>;
   nominalCurrencies: string[];
+  feeCases?: NonNullable<ReturnType<typeof estimateWithdrawalCases>>;
 };
 
 // Reference assumptions are display-only: never persist them as a provider quote.
@@ -43,6 +48,7 @@ export function estimateReceipt(input: {
   for (const step of steps) {
     if (
       step.inputCurrency === step.outputCurrency ||
+      step.requiresQuote ||
       rates[step.id] !== undefined
     )
       continue;
@@ -54,18 +60,27 @@ export function estimateReceipt(input: {
         rates[step.id] = referenceRates[step.id] = rate;
     }
   }
+  const estimationInput = {
+    ...input,
+    steps,
+    scenario: { ...scenario, rates },
+    usdValues,
+  };
+  const feeCases = estimateWithdrawalCases(estimationInput) ?? undefined;
+  const result =
+    feeCases?.kind === "average"
+      ? feeCases.cases[0].result
+      : estimateWithdrawal(estimationInput);
   return {
-    result: estimateWithdrawal({
-      ...input,
-      steps,
-      scenario: { ...scenario, rates },
-      usdValues,
-    }),
+    result,
+    feeCases,
     usdValues,
     referenceRates,
     nominalCurrencies: [
       ...new Set(
-        steps.flatMap((step) => [step.inputCurrency, step.outputCurrency]),
+        result.steps.flatMap(({ step, output }) =>
+          output === null ? [] : [step.inputCurrency, step.outputCurrency],
+        ),
       ),
     ].filter(
       (currency) =>
@@ -83,6 +98,15 @@ export function getReceiptTotal(
   if (receipt.result.complete)
     return { amount: receipt.result.netUsd, currency: "USD", partial: false };
   const preview = getWithdrawalPreview(receipt.result);
+  const first = receipt.result.steps[0];
+  if (
+    preview.amount === null &&
+    first &&
+    first.input !== null &&
+    first.fee !== null &&
+    first.fee > first.input
+  )
+    return { amount: null, currency: "USD", partial: true };
   const amount = preview.amount ?? receipt.result.steps[0]?.input ?? null;
   const unitValue = receipt.usdValues[preview.currency];
   return amount !== null && Number.isFinite(unitValue) && unitValue > 0
@@ -90,10 +114,85 @@ export function getReceiptTotal(
     : { amount, currency: preview.currency, partial: true };
 }
 
+export function getReceiptOutcomes(
+  grossUsd: number,
+  receipt: ReceiptEstimate | null,
+) {
+  const results = receipt?.feeCases?.cases.map(({ result }) => result) ?? [
+    receipt?.result,
+  ];
+  return results.map((result) => ({
+    ...getReceiptTotal(
+      grossUsd,
+      receipt && result ? { ...receipt, result } : null,
+    ),
+    result,
+  }));
+}
+
+export function formatWithdrawalOutcomes(
+  amounts: (number | null)[],
+  kind: NonNullable<ReceiptEstimate["feeCases"]>["kind"] | undefined,
+  format: (amount: number) => string,
+  unavailable = "No disponible",
+) {
+  const values =
+    kind === "range" && amounts.every((amount) => amount !== null)
+      ? [...amounts].sort((a, b) => a! - b!)
+      : amounts;
+  return [
+    ...new Set(
+      values.map((amount) => (amount === null ? unavailable : format(amount))),
+    ),
+  ].join(kind === "range" && !values.includes(null) ? " – " : " o ");
+}
+
+export function getReceiptDiscountLabel(receipt: ReceiptEstimate | null) {
+  if (!receipt) return null;
+  const results = receipt.feeCases?.cases.map(({ result }) => result) ?? [
+    receipt.result,
+  ];
+  const amounts = results.map((result) =>
+    getAppliedWithdrawalFees(result, true).length
+      ? getAppliedWithdrawalFeesUsd(result)
+      : null,
+  );
+  if (amounts.every((amount) => amount === null)) return null;
+  return formatWithdrawalOutcomes(
+    amounts,
+    receipt.feeCases?.kind,
+    (amount) => `${amount > 0 ? "−" : ""}${withdrawalMoney(amount, "USD")}`,
+    "no aplicable",
+  );
+}
+
+export function withdrawalTariffLabel(route: WithdrawalRoute) {
+  const step = getRouteSteps(route)[0];
+  const tariff = step?.variableFee;
+  const usd = (value: number) =>
+    `US$${new Intl.NumberFormat("es-AR", {
+      minimumFractionDigits: Number.isInteger(value) ? 0 : 2,
+      maximumFractionDigits: 2,
+    }).format(value)}`;
+  if (tariff?.kind === "range") return `${usd(tariff.min)}–${tariff.max}`;
+  if (tariff?.kind === "alternatives")
+    return tariff.amounts.map(usd).join(" o ");
+  if (tariff?.kind === "average") return `≈ ${usd(tariff.amount)}`;
+  if (step?.fee?.percent !== undefined)
+    return `${new Intl.NumberFormat("es-AR").format(step.fee.percent)}%`;
+  if (step?.fee?.fixed !== undefined) return usd(step.fee.fixed);
+  return "A confirmar";
+}
+
 export function withdrawalMoney(amount: number, currency: string) {
-  return ["USDc", "USDC", "USDs"].includes(currency)
-    ? `${new Intl.NumberFormat("es-AR", { maximumFractionDigits: 6 }).format(amount)} ${currency}`
-    : formatCurrency(amount, currency, "es-AR");
+  const digits = nominalDollarAssets.includes(currency)
+    ? 6
+    : ["BTC", "ETH", "SOL", "DASH"].includes(currency)
+      ? 8
+      : null;
+  return digits === null
+    ? formatCurrency(amount, currency, "es-AR")
+    : `${new Intl.NumberFormat("es-AR", { maximumFractionDigits: digits }).format(amount)} ${currency}`;
 }
 
 function* calculatedStages(result: WithdrawalResult) {
@@ -118,9 +217,15 @@ function* calculatedStages(result: WithdrawalResult) {
   }
 }
 
-export function getAppliedWithdrawalFees(result: WithdrawalResult) {
+export function getAppliedWithdrawalFees(
+  result: WithdrawalResult,
+  includeZero = false,
+) {
   return Array.from(calculatedStages(result), ({ item }) => item).filter(
-    (item) => item.fee !== null && item.fee > 0,
+    (item) =>
+      item.fee !== null &&
+      (item.fee > 0 ||
+        (includeZero && item.step.feeStatus !== "included-in-rate")),
   );
 }
 
@@ -166,13 +271,14 @@ export function recommendWithdrawal(
   operation: ExchangeOperation,
 ) {
   const rate = primaryRate && getConversionRate(primaryRate, operation);
-  const comparableUsd = ({ result, referenceRates }: ReceiptEstimate) => {
-    // A market reference can illustrate a payout, but cannot establish its execution cost.
+  const comparableUsd = ({ result, feeCases }: ReceiptEstimate) => {
     if (
+      feeCases ||
+      result.route.receiverCostsUnverified ||
       !result.complete ||
       result.stale ||
       result.finalAmount === null ||
-      Object.keys(referenceRates).length
+      result.route.availability === "unconfirmed"
     )
       return null;
     const currency = result.route.currency;
@@ -190,7 +296,37 @@ export function recommendWithdrawal(
   if (currentNet === null) return null;
   let best: { route: WithdrawalRoute; net: number } | null = null;
   for (const alternative of alternatives) {
-    if (alternative.result.route.id === current.result.route.id) continue;
+    const from = current.result.route;
+    const to = alternative.result.route;
+    if (
+      to.id === from.id ||
+      to.delivery !== from.delivery ||
+      to.group !== from.group
+    )
+      continue;
+    const sameAsset = to.currency === from.currency;
+    if (
+      !sameAsset &&
+      [to.currency, from.currency].some((currency) =>
+        nominalDollarAssets.includes(currency),
+      )
+    )
+      continue;
+    const referenceIds = Object.keys(current.referenceRates);
+    const otherIds = Object.keys(alternative.referenceRates);
+    if (referenceIds.length || otherIds.length) {
+      // Only documented like-for-like variants may share a nominal conversion assumption.
+      if (
+        !sameAsset ||
+        !from.comparisonGroup ||
+        from.comparisonGroup !== to.comparisonGroup ||
+        referenceIds.length !== otherIds.length ||
+        !referenceIds.every(
+          (id) => current.referenceRates[id] === alternative.referenceRates[id],
+        )
+      )
+        continue;
+    }
     const net = comparableUsd(alternative);
     if (net !== null && (!best || net > best.net))
       best = { route: alternative.result.route, net };

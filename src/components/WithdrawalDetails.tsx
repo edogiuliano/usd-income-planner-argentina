@@ -2,7 +2,7 @@ import { getProvider, getRouteSources } from "@/lib/withdrawals/catalog";
 import {
   getAppliedWithdrawalFees,
   getAppliedWithdrawalFeesUsd,
-  getReceiptTotal,
+  getReceiptOutcomes,
   withdrawalMoney,
   type ReceiptEstimate,
 } from "@/lib/withdrawals/presentation";
@@ -30,14 +30,14 @@ function feeTerms(rule: FeeRule | null | undefined, currency: string) {
 export function WithdrawalDetails({
   receipt,
   grossUsd,
-  fees,
 }: {
   receipt: ReceiptEstimate;
   grossUsd: number;
-  fees?: Record<string, FeeRule | null>;
 }) {
   const { result } = receipt;
-  const total = getReceiptTotal(grossUsd, receipt);
+  const outcomes = getReceiptOutcomes(grossUsd, receipt);
+  const total = outcomes[0];
+  const multiple = outcomes.length > 1;
   const sources = getRouteSources(result.route);
   const discount =
     result.totalDiscountUsd ?? getAppliedWithdrawalFeesUsd(result);
@@ -46,16 +46,31 @@ export function WithdrawalDetails({
       label: "Sueldo bruto (antes del retiro)",
       amount: withdrawalMoney(grossUsd, "USD"),
     },
-    ...getAppliedWithdrawalFees(result).map(({ step, fee, manual }) => ({
-      label: [
-        step.label,
-        feeTerms(manual ? fees?.[step.id] : step.fee, step.inputCurrency),
-      ]
-        .filter(Boolean)
-        .join(" · "),
-      amount: `−${withdrawalMoney(fee!, step.inputCurrency)}`,
-    })),
-    ...(result.totalDiscountUsd !== null || discount > 0
+    ...(multiple
+      ? outcomes.map(({ result: scenario, amount, currency }, index) => ({
+          label: `Con comisión de ${withdrawalMoney(receipt.feeCases!.cases[index].fee, "USD")}`,
+          amount:
+            scenario?.finalAmount != null && scenario.route.group === "local"
+              ? withdrawalMoney(scenario.finalAmount, scenario.route.currency)
+              : amount === null
+                ? "Saldo insuficiente"
+                : withdrawalMoney(amount, currency),
+        }))
+      : getAppliedWithdrawalFees(result, true).map(
+          ({ step, fee, feeRule }) => ({
+            label:
+              step.variableFee?.kind === "average"
+                ? "Comisión SWIFT promedio"
+                : [step.label, feeTerms(feeRule, step.inputCurrency)]
+                    .filter(Boolean)
+                    .join(" · "),
+            amount:
+              fee === 0
+                ? "Sin cargo"
+                : `−${withdrawalMoney(fee!, step.inputCurrency)}`,
+          }),
+        )),
+    ...(!multiple && (result.totalDiscountUsd !== null || discount > 0)
       ? [
           {
             label:
@@ -68,11 +83,19 @@ export function WithdrawalDetails({
           },
         ]
       : []),
-    ...(total.amount !== null
+    ...(!multiple && total.amount !== null
       ? [
           {
             label: total.partial ? "Subtotal estimado" : "Neto estimado",
             amount: withdrawalMoney(total.amount, total.currency),
+          },
+        ]
+      : []),
+    ...(result.finalAmount !== null && result.route.currency !== "USD"
+      ? [
+          {
+            label: "Saldo en destino",
+            amount: withdrawalMoney(result.finalAmount, result.route.currency),
           },
         ]
       : []),
@@ -86,6 +109,19 @@ export function WithdrawalDetails({
         <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
           {result.route.path.map((id) => getProvider(id).name).join(" → ")}
         </p>
+        <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+          {result.route.conditions}
+        </p>
+        {result.complete &&
+          result.steps.some(
+            ({ step }) =>
+              receipt.referenceRates[step.id] !== undefined &&
+              !receipt.nominalCurrencies.includes(step.outputCurrency),
+          ) && (
+            <p className="text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+              Saldo de destino orientativo con la cotización de la app.
+            </p>
+          )}
         <dl className="space-y-2 text-xs">
           {rows.map(({ label, amount }, index) => (
             <div
@@ -97,27 +133,33 @@ export function WithdrawalDetails({
             </div>
           ))}
         </dl>
-        {!result.complete && (
+        {!multiple && !result.complete && (
           <p className="text-xs leading-5 text-amber-700 dark:text-amber-300">
-            {result.issues[0] ?? "Faltan datos para estimar el neto."}
+            {result.steps[0]?.step.feeStatus === "pending" && !receipt.feeCases
+              ? "Comisión a confirmar."
+              : (result.issues[0] ?? "Faltan datos para estimar el neto.")}
           </p>
         )}
         {sources.length > 0 && (
           <p className="flex flex-wrap items-center gap-x-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
-            Fuentes oficiales:{" "}
-            {sources.map((source, index) => (
-              <a
-                key={source.id}
-                href={source.url}
-                title={source.title}
-                aria-label={source.title}
-                target="_blank"
-                rel="noreferrer"
-                className="underline underline-offset-2"
-              >
-                {index + 1}
-              </a>
-            ))}
+            Fuentes:{" "}
+            {sources.map((source, index) =>
+              source.url ? (
+                <a
+                  key={source.id}
+                  href={source.url}
+                  title={source.title}
+                  aria-label={source.title}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  {index + 1}
+                </a>
+              ) : (
+                <span key={source.id}>{source.title}</span>
+              ),
+            )}
           </p>
         )}
       </div>

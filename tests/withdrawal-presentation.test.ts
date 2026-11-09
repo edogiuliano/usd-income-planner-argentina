@@ -12,6 +12,9 @@ import {
   withdrawalMoney,
 } from "../src/lib/withdrawals/presentation";
 import type { WithdrawalScenario } from "../src/types/withdrawals";
+import { fixtureRoute, fixtureSteps } from "./fixtures/withdrawal-routes";
+
+const reception = { "payoneer-reception": { fixed: 0 } };
 
 function estimate(
   id: string,
@@ -19,14 +22,16 @@ function estimate(
   grossUsd = 977.04,
   usdValues = {},
 ) {
-  const route = withdrawalCatalog.routes.find((item) => item.id === id)!;
+  const fixture = fixtureRoute(id);
+  const route =
+    fixture ?? withdrawalCatalog.routes.find((item) => item.id === id)!;
   return estimateWithdrawal({
     route,
     scenario,
     grossUsd,
     usdValues,
     country: route.countries[0],
-    steps: getRouteSteps(route),
+    steps: fixture ? fixtureSteps(fixture) : getRouteSteps(route),
     asOfDate: "2026-11-06",
   });
 }
@@ -34,7 +39,7 @@ function estimate(
 describe("compact withdrawal presentation", () => {
   it("shows the 0.75% example before other charges, never as the final receipt", () => {
     const result = estimate("deel-arq-instant-ar", {
-      fees: { "deel-arq-instant": { percent: 0.75 } },
+      fees: { "listed-arq": { percent: 0.75 } },
     });
     expect(result.netUsd).toBeNull();
     expect(getWithdrawalPreview(result)).toEqual({
@@ -68,18 +73,18 @@ describe("compact withdrawal presentation", () => {
   });
   it("shows a destination balance even when its USD reference is missing", () => {
     const result = estimate("deel-arq-instant-ar", {
-      rates: { "usd-usdc-arq": 1 },
+      rates: { "usd-usds-arq": 1 },
     });
     expect(result.complete).toBe(false);
     expect(getWithdrawalPreview(result)).toEqual({
       amount: 966.71,
-      currency: "USDc",
-      fees: { USD: 7.33, USDc: 3 },
+      currency: "USDs",
+      fees: { USD: 7.33, USDs: 3 },
       destinationKnown: true,
     });
   });
   it("shows a final known amount with no extra confirmations", () => {
-    const result = estimate("payoneer-santander-ar");
+    const result = estimate("deel-instant-card-mx-usd");
     const preview = getWithdrawalPreview(result);
     expect(preview.destinationKnown).toBe(true);
     expect(preview.amount).toBe(result.finalAmount);
@@ -102,25 +107,27 @@ describe("compact withdrawal presentation", () => {
   });
   it("keeps known USD available when a local-currency quote is missing", () => {
     expect(
-      getWithdrawalPreview(estimate("payoneer-bitso-ar", {}, 1000)),
+      getWithdrawalPreview(
+        estimate("deel-payoneer-bitso-ar", { fees: reception }, 1000),
+      ),
     ).toEqual({
-      amount: 971,
+      amount: 959.35,
       currency: "USD",
-      fees: { USD: 29 },
+      fees: { USD: 40.65 },
       destinationKnown: false,
     });
   });
   it("shows ARS without requiring a USD valuation, while the full estimate remains incomplete", () => {
     const result = estimate(
-      "payoneer-bitso-ar",
-      { rates: { "usd-ars": 1400 } },
+      "deel-payoneer-bitso-ar",
+      { fees: reception, rates: { "usd-ars": 1400 } },
       1000,
     );
     expect(result.complete).toBe(false);
     expect(getWithdrawalPreview(result)).toEqual({
-      amount: 1359400,
+      amount: 1343090,
       currency: "ARS",
-      fees: { USD: 29 },
+      fees: { USD: 40.65 },
       destinationKnown: true,
     });
   });
@@ -148,8 +155,8 @@ describe("compact withdrawal presentation", () => {
     ).toBeNull();
     expect(
       getWithdrawalPreview(
-        estimate("payoneer-santander-ar", {
-          fees: { "payoneer-santander": { fixed: 1000 } },
+        estimate("deel-instant-card-mx-usd", {
+          fees: { "deel-instant-card": { fixed: 1000 } },
         }),
       ).amount,
     ).toBeNull();
@@ -166,8 +173,9 @@ describe("compact withdrawal presentation", () => {
   });
   it("updates automatically with the input salary and distinguishes digital asset tickers", () => {
     expect(
-      getWithdrawalPreview(estimate("payoneer-santander-ar", {}, 2000)).amount,
-    ).toBe(1934);
+      getWithdrawalPreview(estimate("deel-instant-card-mx-usd", {}, 2000))
+        .amount,
+    ).toBe(1985);
     expect(withdrawalMoney(969.71, "USDC")).toBe("969,71 USDC");
     expect(withdrawalMoney(969.71, "USDc")).toBe("969,71 USDc");
     expect(withdrawalMoney(969.71, "USDs")).toBe("969,71 USDs");

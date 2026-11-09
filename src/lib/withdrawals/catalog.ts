@@ -1,24 +1,12 @@
 import rawCatalog from "@/data/withdrawals.json";
 import type { CountryCode } from "@/types";
-import type {
-  WithdrawalCatalog,
-  WithdrawalProvider,
-  WithdrawalRoute,
-} from "@/types/withdrawals";
+import type { WithdrawalCatalog, WithdrawalRoute } from "@/types/withdrawals";
 
 export const withdrawalCatalog = rawCatalog as WithdrawalCatalog;
-export const withdrawalProviders: WithdrawalProvider[] = [
-  "deel",
-  "payoneer",
-  "papaya",
-];
-
-export function getWithdrawalRoutes(
-  country: CountryCode,
-  provider: WithdrawalProvider,
-) {
+export function getWithdrawalRoutes(country: CountryCode) {
   return withdrawalCatalog.routes.filter(
-    (route) => route.provider === provider && route.countries.includes(country),
+    (route) =>
+      route.availability !== "unconfirmed" && route.countries.includes(country),
   );
 }
 

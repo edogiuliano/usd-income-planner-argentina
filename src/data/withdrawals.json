@@ -1,407 +1,947 @@
 {
-  "version": 1,
+  "version": 3,
   "providers": [
-    { "id": "deel", "name": "Deel", "logo": "/providers/deel.svg" },
-    { "id": "payoneer", "name": "Payoneer" },
     {
-      "id": "papaya",
-      "name": "Papaya Global",
-      "helpUrl": "https://www.papayaglobal.com/banco-mobile-wallet/",
-      "availabilityNote": "Falta confirmar qué retiros admite tu país y tu cuenta. No mostramos destinos sin verificar."
+      "id": "deel",
+      "name": "Deel",
+      "logo": "/providers/deel.svg"
     },
-    { "id": "payoneer-wallet", "name": "Saldo Payoneer" },
-    { "id": "arq", "name": "ARQ / DolarApp" },
-    { "id": "astropay", "name": "AstroPay" },
-    { "id": "santander-ar", "name": "Santander Argentina" },
-    { "id": "bitso", "name": "Bitso" },
-    { "id": "prex", "name": "Prex" },
-    { "id": "pix", "name": "Banco por Pix" },
-    { "id": "bre-b", "name": "Banco o billetera por Bre-B" }
+    {
+      "id": "payoneer-wallet",
+      "name": "Saldo Payoneer"
+    },
+    {
+      "id": "arq",
+      "name": "ARQ / DolarApp"
+    },
+    {
+      "id": "astropay",
+      "name": "AstroPay"
+    },
+    {
+      "id": "pix",
+      "name": "Banco por Pix"
+    },
+    {
+      "id": "bre-b",
+      "name": "Banco o billetera por Bre-B"
+    },
+    {
+      "id": "paypal",
+      "name": "PayPal"
+    },
+    {
+      "id": "wise",
+      "name": "Wise"
+    },
+    {
+      "id": "revolut",
+      "name": "Revolut"
+    },
+    {
+      "id": "bank-local",
+      "name": "Banco local"
+    },
+    {
+      "id": "swift",
+      "name": "Banco por SWIFT"
+    }
   ],
   "sources": [
     {
-      "id": "deel-fees",
-      "title": "Deel: cargos y mínimos",
-      "url": "https://help.letsdeel.com/hc/en-gb/articles/14391381019537-About-Withdrawal-Fees-and-Withdrawal-Minimums",
-      "verifiedAt": "2026-11-06",
-      "publishedAt": "2026-10-16"
-    },
-    {
-      "id": "deel-astropay",
-      "title": "Deel: AstroPay y países admitidos",
-      "url": "https://help.letsdeel.com/hc/en-gb/articles/26188901005969-AstroPay-Withdrawal-Method-for-Contractors",
-      "verifiedAt": "2026-11-06",
-      "publishedAt": "2025-07-24"
+      "id": "deel-country-listing",
+      "title": "Relevamiento de tarifas de Deel por país (provisto para esta actualización)",
+      "verifiedAt": "2026-11-09"
     },
     {
       "id": "arq-deel",
       "title": "ARQ: retiros desde Deel",
-      "url": "https://www.arqfinance.com/es-MX/help/articles/deel-instant-withdrawal",
-      "verifiedAt": "2026-11-06",
+      "url": "https://www.arqfinance.com/es-AR/help/articles/deel-instant-withdrawal",
+      "verifiedAt": "2026-11-09",
       "publishedAt": "2026-10-01"
     },
     {
       "id": "arq-assets",
-      "title": "ARQ: naturaleza del saldo recibido",
-      "url": "https://www.arqfinance.com/es-AR/help/collections/adding-balance-to-your-account",
-      "verifiedAt": "2026-11-06"
-    },
-    {
-      "id": "payoneer-ar",
-      "title": "Payoneer: opciones en Argentina",
-      "url": "https://pages.payoneer.com/es/withdrawal-of-funds/",
-      "verifiedAt": "2026-11-06"
-    },
-    {
-      "id": "payoneer-pricing",
-      "title": "Payoneer: tarifas según cuenta",
-      "url": "https://www.payoneer.com/pricing/",
-      "verifiedAt": "2026-11-06",
-      "publishedAt": "2026-01-01"
+      "title": "ARQ: migración del saldo a USDs",
+      "url": "https://www.arqfinance.com/en-AR/help/articles/your-usdc-is-changing-to-usds-starting-from-29th-october-2026",
+      "verifiedAt": "2026-11-09",
+      "publishedAt": "2026-10-29"
     },
     {
       "id": "deel-pix",
       "title": "Deel: Pix en Brasil",
       "url": "https://help.letsdeel.com/hc/en-gb/articles/27113300171921-Pix-Withdrawal-Method-for-Contractors-in-Brazil",
-      "verifiedAt": "2026-11-06",
+      "verifiedAt": "2026-11-09",
       "publishedAt": "2025-10-28"
     },
     {
       "id": "deel-breb",
       "title": "Deel: Bre-B en Colombia",
       "url": "https://help.letsdeel.com/hc/en-gb/articles/43892925141905-Instant-Withdrawals-in-Colombia-with-Bre-B",
-      "verifiedAt": "2026-11-06",
+      "verifiedAt": "2026-11-09",
       "publishedAt": "2026-08-28"
-    },
-    {
-      "id": "papaya-availability",
-      "title": "Papaya: disponibilidad sujeta al país",
-      "url": "https://www.papayaglobal.com/banco-mobile-wallet/",
-      "verifiedAt": "2026-11-06"
     }
   ],
   "steps": [
     {
-      "id": "deel-payoneer",
-      "label": "Deel a Payoneer",
+      "id": "listed-revolut",
+      "label": "Comisión indicada en Deel",
       "inputCurrency": "USD",
       "outputCurrency": "USD",
-      "fee": { "percent": 1, "min": 12 },
-      "feeStatus": "official",
-      "minimumAmount": 50,
-      "sourceIds": ["deel-fees"],
-      "conditions": "Tarifa estándar para este método. Cuenta Payoneer propia y habilitada."
+      "fee": {
+        "fixed": 0
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
     },
     {
-      "id": "payoneer-reception",
-      "label": "Recepción en Payoneer",
+      "id": "listed-wise",
+      "label": "Comisión indicada en Deel",
       "inputCurrency": "USD",
       "outputCurrency": "USD",
-      "fee": null,
-      "feeStatus": "pending",
-      "sourceIds": ["payoneer-pricing"],
-      "conditions": "La recepción desde plataformas depende del convenio y la cuenta. Confirmá el cargo adicional o que ya esté incluido en Deel."
+      "fee": {
+        "fixed": 0
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
     },
     {
-      "id": "payoneer-santander",
-      "label": "Payoneer a Santander",
+      "id": "listed-astropay",
+      "label": "Comisión indicada en Deel",
       "inputCurrency": "USD",
       "outputCurrency": "USD",
-      "fee": { "percent": 3.3 },
-      "feeStatus": "official",
-      "sourceIds": ["payoneer-ar", "payoneer-pricing"],
-      "conditions": "Referencia publicada de punta a punta para esta etapa. Confirmá la tarifa de tu cuenta y banco; no se suman otra vez cargos incluidos."
+      "fee": {
+        "percent": 0.75
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
     },
     {
-      "id": "payoneer-bitso",
-      "label": "Payoneer a Bitso",
+      "id": "listed-arq",
+      "label": "Comisión indicada en Deel",
       "inputCurrency": "USD",
       "outputCurrency": "USD",
-      "fee": { "percent": 2.9 },
-      "feeStatus": "official",
-      "sourceIds": ["payoneer-ar", "payoneer-pricing"],
-      "conditions": "Tarifa publicada de punta a punta. No dupliques cargos que ya estén incluidos en el precio de cambio."
+      "fee": {
+        "percent": 0.75
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
     },
     {
-      "id": "payoneer-prex",
-      "label": "Payoneer a Prex",
+      "id": "usd-usds-arq",
+      "label": "Acreditación en USDs",
       "inputCurrency": "USD",
-      "outputCurrency": "USD",
-      "fee": { "percent": 3.8 },
-      "feeStatus": "official",
-      "sourceIds": ["payoneer-ar", "payoneer-pricing"],
-      "conditions": "Tarifa publicada de punta a punta. El cambio MEP de Prex debe confirmarse en la app."
-    },
-    {
-      "id": "usd-ars",
-      "label": "Cambio a pesos",
-      "inputCurrency": "USD",
-      "outputCurrency": "ARS",
-      "fee": { "fixed": 0 },
-      "feeStatus": "included-in-rate",
-      "sourceIds": ["payoneer-ar"],
-      "conditions": "Cotización efectiva después del spread, antes de los cargos de transferencia ya desglosados. Si tu precio ya incluye esos cargos, reemplazalos por cero para no duplicarlos."
-    },
-    {
-      "id": "deel-astropay",
-      "label": "Deel a AstroPay",
-      "inputCurrency": "USD",
-      "outputCurrency": "USD",
-      "fee": null,
-      "feeStatus": "conflicting",
-      "minimumAmount": 5,
-      "sourceIds": ["deel-fees", "deel-astropay"],
-      "conditions": "Las guías oficiales difieren: 0,75% en el listado más reciente y 1% para igual moneda en la guía anterior. Cargá el costo que te muestra tu cuenta. Requiere saldo de destino en USD habilitado y domicilio coincidente."
-    },
-    {
-      "id": "deel-arq-instant",
-      "label": "Deel a ARQ · instantáneo",
-      "inputCurrency": "USD",
-      "outputCurrency": "USD",
-      "fee": { "percent": 0.75 },
-      "feeStatus": "official",
-      "sourceIds": ["arq-deel"],
-      "conditions": "Solo cuentas Deel de Argentina; método ARQtag. Sin beneficios ni promociones."
-    },
-    {
-      "id": "deel-arq-standard",
-      "label": "Deel a ARQ · estándar",
-      "inputCurrency": "USD",
-      "outputCurrency": "USD",
-      "fee": { "fixed": 5 },
-      "feeStatus": "official",
-      "sourceIds": ["arq-deel"],
-      "conditions": "Transferencia estándar; los beneficios de tu plan pueden cambiar el costo."
-    },
-    {
-      "id": "usd-usdc-arq",
-      "label": "Acreditación en USDc",
-      "inputCurrency": "USD",
-      "outputCurrency": "USDc",
-      "fee": { "fixed": 0 },
+      "outputCurrency": "USDs",
+      "fee": {
+        "fixed": 0
+      },
       "feeStatus": "included-in-rate",
       "sourceIds": ["arq-deel", "arq-assets"],
-      "conditions": "El escenario conserva la etiqueta USDc guardada. ARQ informa una migración a USDs; confirmá el activo acreditado y su conversión. No incluye un retiro cripto externo en USDC."
+      "conditions": "Saldo digital de ARQ, no USD bancario ni USDC. La paridad del simulador es orientativa."
     },
     {
-      "id": "arq-reception",
-      "label": "Recepción en ARQ",
-      "inputCurrency": "USDc",
-      "outputCurrency": "USDc",
-      "fee": { "fixed": 3 },
+      "id": "arq-usds-fee",
+      "label": "Recepción en ARQ (cargo de ARQ)",
+      "inputCurrency": "USDs",
+      "outputCurrency": "USDs",
+      "fee": {
+        "fixed": 3
+      },
       "feeStatus": "official",
       "sourceIds": ["arq-deel"],
-      "conditions": "Tarifa estándar en USDc. Revisá las transferencias incluidas y beneficios de tu plan; reemplazá el cargo si corresponde."
+      "conditions": "Cargo estándar de ARQ en USDs; no se aplican transferencias gratis ni beneficios automáticos."
     },
     {
-      "id": "deel-pix",
-      "label": "Cambio USD a BRL por Pix",
-      "inputCurrency": "USD",
-      "outputCurrency": "BRL",
-      "fee": { "fixed": 0 },
-      "feeStatus": "included-in-rate",
-      "sourceIds": ["deel-pix"],
-      "conditions": "Sin cargo del proveedor por Pix; usá un cambio final que incluya los costos de conversión. Requiere residencia fiscal o domicilio en Brasil y una cuenta Pix propia."
-    },
-    {
-      "id": "deel-breb-fee",
-      "label": "Deel a Bre-B · conversión",
+      "id": "listed-payoneer",
+      "label": "Comisión indicada en Deel",
       "inputCurrency": "USD",
       "outputCurrency": "USD",
-      "fee": { "percent": 1.5, "fixed": 3 },
-      "feeStatus": "official",
-      "minimumAmount": 5,
-      "sourceIds": ["deel-breb"],
-      "conditions": "Tarifa para USD a COP. Llave Bre-B propia y datos de identidad coincidentes."
+      "fee": {
+        "percent": 1
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
     },
     {
-      "id": "usd-cop",
-      "label": "Cambio a pesos colombianos",
+      "id": "listed-paypal",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": {
+        "percent": 2.5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-usd",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-cl",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "CLP",
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-uy",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "UYU",
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-mx",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "MXN",
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-bo",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "BOB",
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-br",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "BRL",
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-local-bank-co",
+      "label": "Comisión indicada en Deel",
       "inputCurrency": "USD",
       "outputCurrency": "COP",
-      "fee": { "fixed": 0 },
-      "feeStatus": "included-in-rate",
-      "maximumOutput": 11500000,
-      "sourceIds": ["deel-breb"],
-      "conditions": "Cotización final sin descontar nuevamente el 1,5% + USD 3 mostrado arriba. Hay límites adicionales según cuenta."
+      "fee": {
+        "fixed": 5
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
     },
     {
-      "id": "breb-reception",
-      "label": "Banco o billetera receptora",
-      "inputCurrency": "COP",
+      "id": "listed-astropay-uy",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "UYU",
+      "fee": {
+        "percent": 0.75
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-astropay-mx",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "MXN",
+      "fee": {
+        "percent": 0.75
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-astropay-br",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "BRL",
+      "fee": {
+        "percent": 0.75
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-astropay-co",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
       "outputCurrency": "COP",
+      "fee": {
+        "percent": 0.75
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-pix",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "BRL",
+      "fee": {
+        "fixed": 0
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-bre-b",
+      "label": "Comisión indicada en Deel",
+      "inputCurrency": "USD",
+      "outputCurrency": "COP",
+      "fee": {
+        "fixed": 0
+      },
+      "feeStatus": "listed",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-deel-swift-usd-ar",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
       "fee": null,
       "feeStatus": "pending",
-      "sourceIds": ["deel-breb"],
-      "conditions": "La entidad receptora puede cobrar. Confirmá su cargo o indicá cero si no aplica."
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "alternatives",
+        "amounts": [25, 45]
+      }
+    },
+    {
+      "id": "listed-deel-swift-usd-cl",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "alternatives",
+        "amounts": [25, 35]
+      }
+    },
+    {
+      "id": "listed-deel-swift-usd-uy",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "alternatives",
+        "amounts": [25, 31]
+      }
+    },
+    {
+      "id": "listed-deel-swift-usd-mx",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir."
+    },
+    {
+      "id": "listed-deel-swift-usd-bo",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "average",
+        "amount": 64.9
+      }
+    },
+    {
+      "id": "listed-deel-swift-usd-range",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "USD",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "range",
+        "min": 5,
+        "max": 50
+      }
+    },
+    {
+      "id": "listed-deel-swift-local-mx",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "MXN",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "range",
+        "min": 5,
+        "max": 50
+      }
+    },
+    {
+      "id": "listed-deel-swift-local-bo",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "BOB",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "range",
+        "min": 5,
+        "max": 50
+      }
+    },
+    {
+      "id": "listed-deel-swift-local-ve",
+      "label": "Comisión SWIFT indicada",
+      "inputCurrency": "USD",
+      "outputCurrency": "VES",
+      "fee": null,
+      "feeStatus": "pending",
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Sobre el saldo en USD antes de convertir.",
+      "variableFee": {
+        "kind": "range",
+        "min": 5,
+        "max": 50
+      }
     }
   ],
   "routes": [
     {
-      "id": "deel-payoneer-ar",
-      "provider": "deel",
-      "countries": ["ar"],
-      "destination": "payoneer-wallet",
+      "id": "deel-revolut-usd",
+      "countries": ["ar", "cl", "uy", "mx", "bo", "br", "co", "ve"],
+      "destination": "revolut",
       "currency": "USD",
-      "name": "Saldo Payoneer",
-      "path": ["deel", "payoneer-wallet"],
-      "steps": ["deel-payoneer", "payoneer-reception"],
-      "sourceIds": ["deel-fees", "payoneer-ar", "payoneer-pricing"],
-      "conditions": "Termina en tu saldo Payoneer, no en un banco local. Sujeto a habilitación de ambas cuentas.",
-      "verifiedAt": "2026-11-06"
+      "name": "Revolut",
+      "path": ["deel", "revolut"],
+      "steps": ["listed-revolut"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
     },
     {
-      "id": "deel-payoneer-santander-ar",
-      "provider": "deel",
-      "countries": ["ar"],
-      "destination": "santander-ar",
+      "id": "deel-wise-usd",
+      "countries": ["ar", "cl", "uy", "mx", "bo", "br", "co", "ve"],
+      "destination": "wise",
       "currency": "USD",
-      "name": "Santander vía Payoneer",
-      "path": ["deel", "payoneer-wallet", "santander-ar"],
-      "steps": ["deel-payoneer", "payoneer-reception", "payoneer-santander"],
-      "sourceIds": ["deel-fees", "payoneer-ar", "payoneer-pricing"],
-      "conditions": "Misma titularidad; Santander debe aceptar y habilitar la recepción de tus fondos.",
-      "verifiedAt": "2026-11-06"
-    },
-    {
-      "id": "deel-payoneer-bitso-ar",
-      "provider": "deel",
-      "countries": ["ar"],
-      "destination": "bitso",
-      "currency": "ARS",
-      "name": "Bitso vía Payoneer",
-      "path": ["deel", "payoneer-wallet", "bitso"],
-      "steps": [
-        "deel-payoneer",
-        "payoneer-reception",
-        "payoneer-bitso",
-        "usd-ars"
-      ],
-      "sourceIds": ["deel-fees", "payoneer-ar"],
-      "conditions": "Usá la opción oficial habilitada en tus cuentas, no una transferencia a un tercero.",
-      "verifiedAt": "2026-11-06"
-    },
-    {
-      "id": "deel-payoneer-prex-ar",
-      "provider": "deel",
-      "countries": ["ar"],
-      "destination": "prex",
-      "currency": "ARS",
-      "name": "Prex vía Payoneer",
-      "path": ["deel", "payoneer-wallet", "prex"],
-      "steps": [
-        "deel-payoneer",
-        "payoneer-reception",
-        "payoneer-prex",
-        "usd-ars"
-      ],
-      "sourceIds": ["deel-fees", "payoneer-ar"],
-      "conditions": "Requiere la vinculación oficial Payoneer/Prex disponible para tu cuenta.",
-      "verifiedAt": "2026-11-06"
+      "name": "Wise Wallet",
+      "path": ["deel", "wise"],
+      "steps": ["listed-wise"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
     },
     {
       "id": "deel-astropay-usd",
-      "provider": "deel",
-      "countries": ["ar", "mx", "co", "br"],
+      "countries": ["ar"],
       "destination": "astropay",
       "currency": "USD",
-      "name": "AstroPay en USD",
+      "name": "AstroPay",
       "path": ["deel", "astropay"],
-      "steps": ["deel-astropay"],
-      "sourceIds": ["deel-astropay", "deel-fees"],
-      "conditions": "Solo si tu cuenta ofrece el retiro en USD, sin conversión. No incluye retiros posteriores desde AstroPay.",
-      "verifiedAt": "2026-11-06"
+      "steps": ["listed-astropay"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
     },
     {
       "id": "deel-arq-instant-ar",
-      "provider": "deel",
       "countries": ["ar"],
       "destination": "arq",
-      "currency": "USDc",
-      "name": "ARQ instantáneo",
+      "currency": "USDs",
+      "name": "ARQ",
       "path": ["deel", "arq"],
-      "steps": ["deel-arq-instant", "usd-usdc-arq", "arq-reception"],
-      "sourceIds": ["arq-deel", "arq-assets"],
-      "conditions": "Saldo en activo virtual USDc. No incluye conversión a pesos ni un retiro bancario posterior.",
-      "verifiedAt": "2026-11-06"
+      "steps": ["listed-arq", "usd-usds-arq", "arq-usds-fee"],
+      "sourceIds": ["deel-country-listing", "arq-deel", "arq-assets"],
+      "conditions": "Para el retiro instantáneo en Argentina, ARQ cobra aparte 3 USDs. No incluye movimientos posteriores desde ARQ.",
+      "verifiedAt": "2026-11-09",
+      "availability": "documented",
+      "delivery": "crypto",
+      "group": "usd",
+      "receiverCostsUnverified": false
     },
     {
-      "id": "deel-arq-standard-ar",
-      "provider": "deel",
-      "countries": ["ar"],
+      "id": "deel-arq-usd",
+      "countries": ["cl", "uy", "mx", "bo", "br", "co", "ve"],
       "destination": "arq",
-      "currency": "USDc",
-      "name": "ARQ estándar",
-      "path": ["deel", "arq"],
-      "steps": ["deel-arq-standard", "usd-usdc-arq", "arq-reception"],
-      "sourceIds": ["arq-deel", "arq-assets"],
-      "conditions": "Saldo en activo virtual USDc. No incluye conversión a pesos ni un retiro bancario posterior.",
-      "verifiedAt": "2026-11-06"
-    },
-    {
-      "id": "payoneer-santander-ar",
-      "provider": "payoneer",
-      "countries": ["ar"],
-      "destination": "santander-ar",
       "currency": "USD",
-      "name": "Santander Argentina",
-      "path": ["payoneer", "santander-ar"],
-      "steps": ["payoneer-santander"],
-      "sourceIds": ["payoneer-ar", "payoneer-pricing"],
-      "conditions": "Parte de un saldo Payoneer ya disponible; no incluye cargos anteriores por recibir el sueldo.",
-      "verifiedAt": "2026-11-06"
+      "name": "ARQ",
+      "path": ["deel", "arq"],
+      "steps": ["listed-arq"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Estimación en USD según la opción relevada. El retiro instantáneo por ARQtag y el cargo argentino no se extrapolan a otros países.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
     },
     {
-      "id": "payoneer-bitso-ar",
-      "provider": "payoneer",
+      "id": "deel-payoneer-ar",
       "countries": ["ar"],
-      "destination": "bitso",
-      "currency": "ARS",
-      "name": "Bitso en pesos",
-      "path": ["payoneer", "bitso"],
-      "steps": ["payoneer-bitso", "usd-ars"],
-      "sourceIds": ["payoneer-ar", "payoneer-pricing"],
-      "conditions": "Parte de un saldo Payoneer disponible. Se debe confirmar el tipo de cambio de la app.",
-      "verifiedAt": "2026-11-06"
+      "destination": "payoneer-wallet",
+      "currency": "USD",
+      "name": "Payoneer",
+      "path": ["deel", "payoneer-wallet"],
+      "steps": ["listed-payoneer"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
     },
     {
-      "id": "payoneer-prex-ar",
-      "provider": "payoneer",
-      "countries": ["ar"],
-      "destination": "prex",
-      "currency": "ARS",
-      "name": "Prex en pesos",
-      "path": ["payoneer", "prex"],
-      "steps": ["payoneer-prex", "usd-ars"],
-      "sourceIds": ["payoneer-ar", "payoneer-pricing"],
-      "conditions": "Parte de un saldo Payoneer disponible. Se debe confirmar el cambio MEP que ofrece Prex.",
-      "verifiedAt": "2026-11-06"
+      "id": "deel-payoneer-latam",
+      "countries": ["cl", "uy", "mx", "bo", "br", "co", "ve"],
+      "destination": "payoneer-wallet",
+      "currency": "USD",
+      "name": "Payoneer",
+      "path": ["deel", "payoneer-wallet"],
+      "steps": ["listed-payoneer"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-paypal-usd",
+      "countries": ["ar", "cl", "uy", "mx", "bo", "br", "co", "ve"],
+      "destination": "paypal",
+      "currency": "USD",
+      "name": "PayPal",
+      "path": ["deel", "paypal"],
+      "steps": ["listed-paypal"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-uy-usd",
+      "countries": ["uy"],
+      "destination": "bank-local",
+      "currency": "USD",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-usd"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-cl",
+      "countries": ["cl"],
+      "destination": "bank-local",
+      "currency": "CLP",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-cl"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-uy",
+      "countries": ["uy"],
+      "destination": "bank-local",
+      "currency": "UYU",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-uy"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-mx",
+      "countries": ["mx"],
+      "destination": "bank-local",
+      "currency": "MXN",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-mx"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-bo",
+      "countries": ["bo"],
+      "destination": "bank-local",
+      "currency": "BOB",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-bo"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-br",
+      "countries": ["br"],
+      "destination": "bank-local",
+      "currency": "BRL",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-br"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-local-bank-co",
+      "countries": ["co"],
+      "destination": "bank-local",
+      "currency": "COP",
+      "name": "Banco local",
+      "path": ["deel", "bank-local"],
+      "steps": ["listed-local-bank-co"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-astropay-uy",
+      "countries": ["uy"],
+      "destination": "astropay",
+      "currency": "UYU",
+      "name": "AstroPay",
+      "path": ["deel", "astropay"],
+      "steps": ["listed-astropay-uy"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-astropay-mx",
+      "countries": ["mx"],
+      "destination": "astropay",
+      "currency": "MXN",
+      "name": "AstroPay",
+      "path": ["deel", "astropay"],
+      "steps": ["listed-astropay-mx"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-astropay-br",
+      "countries": ["br"],
+      "destination": "astropay",
+      "currency": "BRL",
+      "name": "AstroPay",
+      "path": ["deel", "astropay"],
+      "steps": ["listed-astropay-br"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-astropay-co",
+      "countries": ["co"],
+      "destination": "astropay",
+      "currency": "COP",
+      "name": "AstroPay",
+      "path": ["deel", "astropay"],
+      "steps": ["listed-astropay-co"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Usalo si el método y la moneda aparecen en tu cuenta de Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "wallet",
+      "group": "local",
+      "receiverCostsUnverified": true
     },
     {
       "id": "deel-pix-br",
-      "provider": "deel",
       "countries": ["br"],
       "destination": "pix",
       "currency": "BRL",
-      "name": "Pix en reales",
+      "name": "Pix",
       "path": ["deel", "pix"],
-      "steps": ["deel-pix"],
-      "sourceIds": ["deel-pix"],
-      "conditions": "Cuenta Pix propia habilitada y residencia o domicilio en Brasil.",
-      "verifiedAt": "2026-11-06"
+      "steps": ["listed-pix"],
+      "sourceIds": ["deel-country-listing", "deel-pix"],
+      "conditions": "Requiere una cuenta con Pix a tu nombre. El cambio se estima con la cotización de la app.",
+      "verifiedAt": "2026-11-09",
+      "availability": "documented",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
     },
     {
       "id": "deel-breb-co",
-      "provider": "deel",
       "countries": ["co"],
       "destination": "bre-b",
       "currency": "COP",
-      "name": "Bre-B en pesos",
+      "name": "Bre-B",
       "path": ["deel", "bre-b"],
-      "steps": ["deel-breb-fee", "usd-cop", "breb-reception"],
-      "sourceIds": ["deel-breb"],
-      "conditions": "Llave Bre-B activa a tu nombre. Límite publicado COP 11.500.000 por retiro; pueden aplicar otros límites.",
-      "verifiedAt": "2026-11-06"
+      "steps": ["listed-bre-b"],
+      "sourceIds": ["deel-country-listing", "deel-breb"],
+      "conditions": "Se usa el cargo de US$0 que figura en el relevamiento. La guía pública describe otras condiciones para USD a COP; verificá el importe y cambio en Deel.",
+      "verifiedAt": "2026-11-09",
+      "availability": "documented",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-usd-ar",
+      "countries": ["ar"],
+      "destination": "swift",
+      "currency": "USD",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-usd-ar"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "El listado indica US$25 y un valor general de US$45, sin aclarar cuándo corresponde cada uno. No se suman.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-usd-cl",
+      "countries": ["cl"],
+      "destination": "swift",
+      "currency": "USD",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-usd-cl"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "El listado indica US$25 y un valor general de US$35, sin aclarar cuándo corresponde cada uno. No se suman.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-usd-uy",
+      "countries": ["uy"],
+      "destination": "swift",
+      "currency": "USD",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-usd-uy"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "El listado indica US$25 y un valor general de US$31, sin aclarar cuándo corresponde cada uno. No se suman.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-usd-mx",
+      "countries": ["mx"],
+      "destination": "swift",
+      "currency": "USD",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-usd-mx"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "El relevamiento no indica un cargo en USD para este método en México.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-usd-bo",
+      "countries": ["bo"],
+      "destination": "swift",
+      "currency": "USD",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-usd-bo"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Promedio relevado, no tarifa fija ni cotización garantizada.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-usd-range",
+      "countries": ["br", "co", "ve"],
+      "destination": "swift",
+      "currency": "USD",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-usd-range"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Rango relevado; no hay un cargo único. Los bancos pueden descontar cargos adicionales.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "usd",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-local-mx",
+      "countries": ["mx"],
+      "destination": "swift",
+      "currency": "MXN",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-local-mx"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Rango relevado en USD, descontado antes de estimar el cambio a moneda local.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-local-bo",
+      "countries": ["bo"],
+      "destination": "swift",
+      "currency": "BOB",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-local-bo"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Rango relevado en USD, descontado antes de estimar el cambio a moneda local.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
+    },
+    {
+      "id": "deel-swift-local-ve",
+      "countries": ["ve"],
+      "destination": "swift",
+      "currency": "VES",
+      "name": "SWIFT",
+      "path": ["deel", "swift"],
+      "steps": ["listed-deel-swift-local-ve"],
+      "sourceIds": ["deel-country-listing"],
+      "conditions": "Rango relevado en USD, descontado antes de estimar el cambio a moneda local.",
+      "verifiedAt": "2026-11-09",
+      "availability": "eligible",
+      "delivery": "bank",
+      "group": "local",
+      "receiverCostsUnverified": true
     }
   ]
 }

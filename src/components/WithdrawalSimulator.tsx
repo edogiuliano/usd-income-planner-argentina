@@ -4,15 +4,12 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ProviderIdentity } from "@/components/ProviderIdentity";
 import { WithdrawalDetails } from "@/components/WithdrawalDetails";
 import { todayIso } from "@/lib/formState";
-import {
-  getProvider,
-  getWithdrawalRoutes,
-  withdrawalProviders,
-} from "@/lib/withdrawals/catalog";
+import { getWithdrawalRoutes } from "@/lib/withdrawals/catalog";
 import {
   estimateReceipt,
   recommendWithdrawal,
   withdrawalMoney,
+  withdrawalTariffLabel,
   type ReceiptEstimate,
 } from "@/lib/withdrawals/presentation";
 import {
@@ -23,7 +20,7 @@ import {
   selectedWithdrawalRoute,
 } from "@/lib/withdrawals/preferences";
 import type { CountryCode, ExchangeOperation, ExchangeRate } from "@/types";
-import type { WithdrawalProvider, WithdrawalRoute } from "@/types/withdrawals";
+import type { WithdrawalRoute } from "@/types/withdrawals";
 
 export function WithdrawalSimulator({
   grossUsd,
@@ -68,13 +65,12 @@ export function WithdrawalSimulator({
     }
   }, [loaded, preferences]);
 
-  const routes = getWithdrawalRoutes(country, preferences.provider);
-  const selectionKey = `${country}:${preferences.provider}`;
+  const routes = getWithdrawalRoutes(country);
   const route = selectedWithdrawalRoute(routes, preferences, country);
-  const selectRoute = (next: WithdrawalRoute) =>
+  const selectRoute = (id: string) =>
     setPreferences((previous) => ({
       ...previous,
-      selections: { ...previous.selections, [selectionKey]: next.id },
+      selections: { ...previous.selections, [country]: id },
     }));
   const asOfDate = todayIso();
   const calculateReceipt = (item: WithdrawalRoute) =>
@@ -92,10 +88,7 @@ export function WithdrawalSimulator({
     open && loaded && receipt
       ? recommendWithdrawal(
           receipt,
-          withdrawalProviders
-            .flatMap((provider) => getWithdrawalRoutes(country, provider))
-            .filter((item) => item.id !== route?.id)
-            .map(calculateReceipt),
+          routes.filter((item) => item.id !== route?.id).map(calculateReceipt),
           primaryRate,
           operation,
         )
@@ -114,105 +107,43 @@ export function WithdrawalSimulator({
         </summary>
         {open && loaded && (
           <div className="mt-4 min-w-0 space-y-4">
-            <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-              <label className="min-w-0 text-xs font-medium">
-                Desde
-                <span className="mt-1.5 flex min-w-0 items-center gap-2">
-                  <ProviderIdentity
-                    key={preferences.provider}
-                    id={preferences.provider}
-                    compact
-                    iconOnly
-                  />
-                  <select
-                    aria-label="Desde"
-                    className="app-input w-full"
-                    value={preferences.provider}
-                    onChange={(event) => {
-                      const provider = event.target.value as WithdrawalProvider;
-                      setPreferences((previous) => {
-                        const nextRoutes = getWithdrawalRoutes(
-                          country,
-                          provider,
-                        );
-                        const previousRoute = selectedWithdrawalRoute(
-                          nextRoutes,
-                          { ...previous, provider },
-                          country,
-                        );
-                        const nextKey = `${country}:${provider}`;
-                        return {
-                          ...previous,
-                          provider,
-                          selections: {
-                            ...previous.selections,
-                            [nextKey]:
-                              previous.selections[nextKey] ??
-                              previousRoute?.id ??
-                              nextRoutes[0]?.id ??
-                              "",
-                          },
-                        };
-                      });
-                    }}
-                  >
-                    {withdrawalProviders.map((id) => (
-                      <option key={id} value={id}>
-                        {getProvider(id).name}
-                      </option>
-                    ))}
-                  </select>
-                </span>
-              </label>
-              <label className="min-w-0 text-xs font-medium">
-                Hacia
-                <span className="mt-1.5 flex min-w-0 items-center gap-2">
-                  <ProviderIdentity
-                    key={route?.destination ?? "bank"}
-                    id={route?.destination ?? "bank"}
-                    compact
-                    iconOnly
-                  />
-                  <select
-                    aria-label="Hacia"
-                    className="app-input w-full"
-                    disabled={!routes.length}
-                    value={route?.id ?? ""}
-                    onChange={(event) => {
-                      if (!event.target.value) {
-                        setPreferences((previous) => ({
-                          ...previous,
-                          selections: {
-                            ...previous.selections,
-                            [selectionKey]: "",
-                          },
-                        }));
-                        return;
-                      }
-                      const next = routes.find(
-                        (item) => item.id === event.target.value,
-                      );
-                      if (next) selectRoute(next);
-                    }}
-                  >
-                    <option value="">
-                      {routes.length
-                        ? "Sin retiro"
-                        : "Sin destinos disponibles"}
-                    </option>
-                    {routes.map((item) => (
-                      <option key={item.id} value={item.id}>
-                        {routes.some(
-                          (other) =>
-                            other.destination === item.destination &&
-                            other.id !== item.id,
-                        )
-                          ? item.name
-                          : getProvider(item.destination).name}
-                      </option>
-                    ))}
-                  </select>
-                </span>
+            <div className="grid min-w-0 gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-end">
+              <span className="sm:pb-2">
+                <ProviderIdentity id="deel" compact />
+              </span>
+              <label className="block min-w-0 text-xs font-medium">
+                ¿A dónde querés retirar?
+                <select
+                  className="app-input mt-1.5 w-full"
+                  disabled={!routes.length}
+                  value={route?.id ?? ""}
+                  onChange={(event) => selectRoute(event.target.value)}
+                >
+                  <option value="">
+                    {routes.length ? "Sin retiro" : "Sin destinos confirmados"}
+                  </option>
+                  {(
+                    [
+                      ["local", "Moneda local"],
+                      ["usd", "USD"],
+                    ] as const
+                  ).map(([status, label]) => {
+                    const items = routes.filter(
+                      (item) => item.group === status,
+                    );
+                    return (
+                      items.length > 0 && (
+                        <optgroup key={status} label={label}>
+                          {items.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} · {withdrawalTariffLabel(item)}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )
+                    );
+                  })}
+                </select>
               </label>
             </div>
             {route && receipt ? (
@@ -230,26 +161,18 @@ export function WithdrawalSimulator({
                         <strong>
                           {withdrawalMoney(recommendation.savingsUsd, "USD")}
                         </strong>{" "}
-                        con {getProvider(recommendation.route.provider).name} →{" "}
-                        {recommendation.route.name}, si podés cobrar por esa
-                        ruta.
+                        retirando por {recommendation.route.name}, si lo tenés
+                        habilitado.
                       </>
                     )}
                   </p>
                 )}
-                <WithdrawalDetails
-                  receipt={receipt}
-                  grossUsd={grossUsd}
-                  fees={
-                    preferences.scenarios[scenarioKey(country, route.id)]?.fees
-                  }
-                />
+                <WithdrawalDetails receipt={receipt} grossUsd={grossUsd} />
               </>
             ) : routes.length === 0 ? (
               <p className="py-3 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
-                Todavía no hay retiros verificados de{" "}
-                {getProvider(preferences.provider).name} para {countryName}. Tu
-                cálculo de sueldo no cambia.
+                No hay métodos de Deel confirmados para {countryName}. Tu sueldo
+                no cambia.
               </p>
             ) : (
               <p className="text-xs text-zinc-500 dark:text-zinc-400">

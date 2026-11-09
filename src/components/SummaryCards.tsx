@@ -1,7 +1,7 @@
 import { formatNumber, formatUsd } from "@/lib/formatters";
 import { WithdrawalEstimate } from "@/components/WithdrawalEstimate";
 import {
-  getAppliedWithdrawalFeesUsd,
+  getReceiptDiscountLabel,
   withdrawalMoney,
   type ReceiptEstimate,
 } from "@/lib/withdrawals/presentation";
@@ -39,10 +39,15 @@ export function SummaryCards({
   unavailable,
 }: SummaryCardsProps) {
   const discounts = [
-    ["Descuento VTO incluido", incomeResult.unpaidLeaveDeductionUsd],
+    [
+      "Descuento VTO incluido",
+      incomeResult.unpaidLeaveDeductionUsd > 0
+        ? `−${withdrawalMoney(incomeResult.unpaidLeaveDeductionUsd, "USD")}`
+        : null,
+    ],
     [
       "Comisiones de retiro incluidas",
-      receipt ? getAppliedWithdrawalFeesUsd(receipt.result) : 0,
+      ready ? getReceiptDiscountLabel(receipt) : null,
     ],
   ] as const;
   const statistics = [
@@ -82,16 +87,14 @@ export function SummaryCards({
         unavailable={unavailable}
       />
       {discounts
-        .filter(([, amount]) => amount > 0)
+        .filter(([, amount]) => amount !== null)
         .map(([label, amount]) => (
           <div
             key={label}
             className="mt-3 flex flex-wrap justify-between gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"
           >
             <span>{label}</span>
-            <strong className="tabular-nums">
-              −{withdrawalMoney(amount, "USD")}
-            </strong>
+            <strong className="tabular-nums">{amount}</strong>
           </div>
         ))}
       <dl className="mt-6 grid grid-cols-2 gap-x-5 gap-y-6 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">

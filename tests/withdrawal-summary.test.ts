@@ -21,6 +21,7 @@ import {
 } from "../src/lib/withdrawals/preferences";
 import type { ExchangeOperation, ExchangeRate } from "../src/types";
 import type { WithdrawalScenario } from "../src/types/withdrawals";
+import { fixtureRoute, fixtureSteps } from "./fixtures/withdrawal-routes";
 
 const rate: ExchangeRate = {
   casa: "cripto",
@@ -39,16 +40,40 @@ const estimate = (
   grossUsd = 977.04,
   primaryRate: ExchangeRate | null = rate,
   operation: ExchangeOperation = "sell-usd",
-) =>
-  estimateReceipt({
+) => {
+  const fixture = fixtureRoute(id);
+  const route = fixture ?? getRoute(id);
+  if (fixture)
+    vi.spyOn(catalog, "getRouteSteps").mockReturnValueOnce(
+      fixtureSteps(fixture),
+    );
+  return estimateReceipt({
     grossUsd,
-    route: getRoute(id),
+    route,
     scenario,
     primaryRate,
     operation,
-    country: getRoute(id).countries[0],
+    country: route.countries[0],
     asOfDate: "2026-11-06",
   });
+};
+const confirmedReception = { "payoneer-reception": { fixed: 0 } };
+const estimateBitso = (
+  scenario: Partial<WithdrawalScenario> = {},
+  grossUsd = 1000,
+  primaryRate: ExchangeRate | null = rate,
+  operation: ExchangeOperation = "sell-usd",
+) =>
+  estimate(
+    "deel-payoneer-bitso-ar",
+    {
+      ...scenario,
+      fees: { ...confirmedReception, ...scenario.fees },
+    },
+    grossUsd,
+    primaryRate,
+    operation,
+  );
 afterEach(() => vi.restoreAllMocks());
 
 describe("read-only withdrawal detail and recommendations", () => {
@@ -126,7 +151,7 @@ describe("read-only withdrawal detail and recommendations", () => {
       "10,33",
       "Neto estimado",
       "966,71",
-      "Fuentes oficiales",
+      "Fuentes:",
     ])
       expect(html).toContain(label);
     expect(html).not.toMatch(
@@ -134,52 +159,54 @@ describe("read-only withdrawal detail and recommendations", () => {
     );
     expect(html).not.toContain("equivalencia nominal");
   });
-  it("compares across providers using the net after fixed and minimum charges", () => {
-    const current = estimate("payoneer-santander-ar", {}, 1000);
-    const wallet = estimate(
-      "deel-payoneer-ar",
-      { fees: { "payoneer-reception": { fixed: 0 } } },
-      1000,
-    );
-    const intermediary = estimate(
-      "deel-payoneer-santander-ar",
-      { fees: { "payoneer-reception": { fixed: 0 } } },
-      1000,
-    );
-    expect(
-      recommendWithdrawal(current, [wallet, intermediary], rate, "sell-usd"),
-    ).toEqual({ kind: "saving", route: wallet.result.route, savingsUsd: 21 });
-    expect(
-      recommendWithdrawal(wallet, [current, intermediary], rate, "sell-usd"),
-    ).toEqual({ kind: "best" });
-  });
-  it("uses one valuation basis for final balances in different currencies", () => {
-    const current = estimate("payoneer-santander-ar", {}, 1000);
-    const bitso = estimate(
-      "payoneer-bitso-ar",
-      { rates: { "usd-ars": 1500 }, usdValues: { ARS: 1 / 2000 } },
-      1000,
-    );
-    expect(bitso.result.netUsd).toBe(728.25);
-    expect(recommendWithdrawal(current, [bitso], rate, "sell-usd")).toEqual({
+  it("compares like-for-like Deel routes after all fixed and percentage charges", () => {
+    const current = estimate("deel-arq-instant-ar", {}, 1000);
+    current.result.route = {
+      ...current.result.route,
+      comparisonGroup: "arq-usds",
+    };
+    const standard = estimate("deel-arq-standard-ar", {}, 1000);
+    standard.result.route = { ...standard.result.route, group: "usd" };
+    expect(recommendWithdrawal(current, [standard], rate, "sell-usd")).toEqual({
       kind: "saving",
-      route: bitso.result.route,
-      savingsUsd: 4,
+      route: standard.result.route,
+      savingsUsd: 2.5,
     });
-    expect(recommendWithdrawal(current, [bitso], rate, "buy-usd")).toEqual({
+    expect(recommendWithdrawal(standard, [current], rate, "sell-usd")).toEqual({
       kind: "best",
     });
-    expect(recommendWithdrawal(current, [bitso], null, "sell-usd")).toBeNull();
   });
-  it("stays silent for unknown costs, reference-only FX, stale routes, or a lone comparable option", () => {
-    const current = estimate("payoneer-santander-ar", {}, 1000);
-    const pending = estimate("deel-astropay-usd", {}, 1000);
-    const approximate = estimate("payoneer-bitso-ar", {}, 1000);
-    const wallet = estimate(
-      "deel-payoneer-ar",
-      { fees: { "payoneer-reception": { fixed: 0 } } },
+  it("uses one valuation basis for final balances in different currencies", () => {
+    const current = estimate(
+      "deel-payoneer-santander-ar",
+      { fees: confirmedReception },
       1000,
     );
+    const bank = estimate(
+      "deel-local-bank-ar",
+      {
+        fees: { "bank-provider": { fixed: 0 } },
+        rates: { "bank-local-ars": 1500 },
+        usdValues: { ARS: 1 / 2000 },
+      },
+      1000,
+    );
+    expect(bank.result.netUsd).toBe(750);
+    expect(recommendWithdrawal(current, [bank], rate, "sell-usd")).toEqual({
+      kind: "saving",
+      route: bank.result.route,
+      savingsUsd: 44.6,
+    });
+    expect(recommendWithdrawal(current, [bank], rate, "buy-usd")).toEqual({
+      kind: "best",
+    });
+    expect(recommendWithdrawal(current, [bank], null, "sell-usd")).toBeNull();
+  });
+  it("stays silent for unknown costs, reference-only FX, stale routes, or a lone comparable option", () => {
+    const current = estimate("deel-arq-instant-ar", {}, 1000);
+    const pending = estimate("deel-astropay-usd", {}, 1000);
+    const approximate = estimate("deel-direct-usdc", {}, 1000);
+    const standard = estimate("deel-arq-standard-ar", {}, 1000);
     expect(
       recommendWithdrawal(
         current,
@@ -187,17 +214,17 @@ describe("read-only withdrawal detail and recommendations", () => {
           current,
           pending,
           approximate,
-          { ...wallet, result: { ...wallet.result, stale: true } },
+          { ...standard, result: { ...standard.result, stale: true } },
         ],
         rate,
         "sell-usd",
       ),
     ).toBeNull();
     expect(
-      recommendWithdrawal(pending, [current, wallet], rate, "sell-usd"),
+      recommendWithdrawal(pending, [current, standard], rate, "sell-usd"),
     ).toBeNull();
     expect(
-      recommendWithdrawal(approximate, [current, wallet], rate, "sell-usd"),
+      recommendWithdrawal(approximate, [current, standard], rate, "sell-usd"),
     ).toBeNull();
   });
 });
@@ -213,52 +240,48 @@ describe("unified receipt summary", () => {
     });
     expect(convertUsd(receipt.result.netUsd!, rate)).toBe(1450065);
     expect(receipt.result.totalFeeUsd).toBe(10.33);
-    expect(receipt.nominalCurrencies).toEqual(["USDc"]);
+    expect(receipt.nominalCurrencies).toEqual(["USDs"]);
   });
   it("matches the requested 0.75% example when the other charge is explicitly waived", () => {
     const receipt = estimate("deel-arq-instant-ar", {
-      fees: { "arq-reception": { fixed: 0 } },
+      fees: { "arq-usds-fee": { fixed: 0 } },
     });
     expect(receipt.result.netUsd).toBe(969.71);
     expect(receipt.result.totalFeeUsd).toBe(7.33);
     expect(convertUsd(receipt.result.netUsd!, rate)).toBe(1454565);
   });
   it("uses the configured sell/buy operation and reference-only rates", () => {
-    const sell = estimate("payoneer-bitso-ar", {}, 1000);
-    const buy = estimate("payoneer-bitso-ar", {}, 1000, rate, "buy-usd");
-    expect(sell.result.netUsd).toBe(971);
-    expect(sell.result.finalAmount).toBe(1456500);
-    expect(buy.result.finalAmount).toBe(1553600);
-    const reference = estimate("payoneer-bitso-ar", {}, 1000, {
+    const sell = estimateBitso();
+    const buy = estimateBitso({}, 1000, rate, "buy-usd");
+    expect(sell.result.netUsd).toBe(959.35);
+    expect(sell.result.finalAmount).toBe(1439025);
+    expect(buy.result.finalAmount).toBe(1534960);
+    const reference = estimateBitso({}, 1000, {
       ...rate,
       buy: 1200,
       sell: 1200,
       isReference: true,
     });
-    expect(reference.result.finalAmount).toBe(1165200);
+    expect(reference.result.finalAmount).toBe(1151220);
   });
   it("updates with the preferred rate without persisting a fictitious provider quote", () => {
     const scenario = { fees: {}, rates: {}, usdValues: {} };
-    const first = estimate("payoneer-bitso-ar", scenario, 1000);
-    const next = estimate("payoneer-bitso-ar", scenario, 1000, {
+    const first = estimateBitso(scenario);
+    const next = estimateBitso(scenario, 1000, {
       ...rate,
       buy: 2000,
     });
     expect(first.referenceRates["usd-ars"]).toBe(1500);
     expect(next.referenceRates["usd-ars"]).toBe(2000);
-    expect(next.result.netUsd).toBe(971);
+    expect(next.result.netUsd).toBe(959.35);
     expect(scenario).toEqual({ fees: {}, rates: {}, usdValues: {} });
     expect(next.result.issues).toEqual([]);
   });
   it("keeps a manually entered provider quote and prevents double commission deductions", () => {
-    const receipt = estimate(
-      "payoneer-bitso-ar",
-      { rates: { "usd-ars": 1400 } },
-      1000,
-    );
-    expect(receipt.result.finalAmount).toBe(1359400);
-    expect(receipt.result.netUsd).toBe(906.27);
-    expect(receipt.result.totalFeeUsd).toBe(29);
+    const receipt = estimateBitso({ rates: { "usd-ars": 1400 } });
+    expect(receipt.result.finalAmount).toBe(1343090);
+    expect(receipt.result.netUsd).toBe(895.39);
+    expect(receipt.result.totalFeeUsd).toBe(40.65);
     expect(receipt.referenceRates).toEqual({});
   });
   it("shows a known USD subtotal and converted subtotal without skipping an unknown intermediary", () => {
@@ -276,31 +299,30 @@ describe("unified receipt summary", () => {
       partial: true,
     });
     expect(
-      estimate("payoneer-santander-ar", {
-        fees: { "payoneer-santander": null },
+      estimate("deel-instant-card-mx-usd", {
+        fees: { "deel-instant-card": null },
       }).result.complete,
     ).toBe(false);
     expect(
-      estimate("payoneer-santander-ar", {
-        fees: { "payoneer-santander": { fixed: 1000 } },
+      estimate("deel-instant-card-mx-usd", {
+        fees: { "deel-instant-card": { fixed: 1000 } },
       }).result.complete,
     ).toBe(false);
   });
   it("does not invent local FX without a reference and preserves a valid USD net", () => {
-    const receipt = estimate("payoneer-bitso-ar", {}, 1000, null);
+    const receipt = estimateBitso({}, 1000, null);
     expect(getReceiptTotal(1000, receipt)).toEqual({
-      amount: 971,
+      amount: 959.35,
       currency: "USD",
       partial: true,
     });
     expect(receipt.result.finalAmount).toBeNull();
     expect(
-      estimate("payoneer-santander-ar", {}, 1000, null).result.netUsd,
-    ).toBe(967);
-    expect(
-      estimate("payoneer-bitso-ar", {}, 1000, { ...rate, buy: 0 }).result
-        .complete,
-    ).toBe(false);
+      estimate("deel-instant-card-mx-usd", {}, 1000, null).result.netUsd,
+    ).toBe(985);
+    expect(estimateBitso({}, 1000, { ...rate, buy: 0 }).result.complete).toBe(
+      false,
+    );
   });
   it("supports other local currencies without changing countries or tariff coverage", () => {
     const brl = {
@@ -314,7 +336,7 @@ describe("unified receipt summary", () => {
     };
     const receipt = estimate("deel-pix-br", {}, 1000, brl);
     expect(receipt.result.finalAmount).toBe(5000);
-    expect(receipt.referenceRates["deel-pix"]).toBe(5);
+    expect(receipt.referenceRates["listed-pix"]).toBe(5);
     expect(receipt.result.netUsd).toBe(1000);
   });
   it("supports nominal USDC estimates without renaming existing catalog assets or guaranteeing parity", () => {
@@ -346,32 +368,28 @@ describe("unified receipt summary", () => {
     );
     expect(html).toContain("USDC");
     expect(html).toContain("equivalencia nominal 1:1 con USD, no garantizada");
-    expect(base.currency).toBe("USDc");
+    expect(base.currency).toBe("USDs");
   });
   it("updates route and gross independently while keeping the original input unchanged", () => {
     const input = { salary: 1000 };
     expect(
-      estimate("payoneer-santander-ar", {}, input.salary).result.netUsd,
-    ).toBe(967);
-    expect(
-      estimate(
-        "deel-payoneer-ar",
-        { fees: { "payoneer-reception": { fixed: 0 } } },
-        input.salary,
-      ).result.netUsd,
-    ).toBe(988);
-    expect(estimate("payoneer-santander-ar", {}, 2000).result.netUsd).toBe(
-      1934,
+      estimate("deel-instant-card-mx-usd", {}, input.salary).result.netUsd,
+    ).toBe(985);
+    expect(estimate("deel-payoneer-ar", {}, input.salary).result.netUsd).toBe(
+      990,
+    );
+    expect(estimate("deel-instant-card-mx-usd", {}, 2000).result.netUsd).toBe(
+      1985,
     );
     expect(input.salary).toBe(1000);
   });
   it("restores selected routes, explicit no-retirement, and legacy default-route edits", () => {
     const id = "deel-payoneer-ar";
-    const routes = catalog.getWithdrawalRoutes("ar", "deel");
+    const routes = catalog.getWithdrawalRoutes("ar");
     const key = scenarioKey("ar", id);
     const legacy = restoreWithdrawalPreferences(
       JSON.stringify({
-        scenarios: { [key]: { fees: { "payoneer-reception": { fixed: 0 } } } },
+        scenarios: { [key]: { fees: { "listed-payoneer": { percent: 1 } } } },
       }),
     );
     expect(selectedWithdrawalRoute(routes, legacy, "ar")?.id).toBe(id);
@@ -388,7 +406,7 @@ describe("unified receipt summary", () => {
     ).toBeNull();
   });
   it("renders a single net/local total, and keeps labor statistics unchanged", () => {
-    const receipt = estimate("payoneer-santander-ar");
+    const receipt = estimate("deel-arq-instant-ar");
     const html = renderToStaticMarkup(
       createElement(SummaryCards, {
         receipt,

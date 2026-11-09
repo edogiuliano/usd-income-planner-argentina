@@ -1,7 +1,8 @@
 import { convertUsd, operationLabel } from "@/lib/conversion";
 import { formatCurrency } from "@/lib/formatters";
 import {
-  getReceiptTotal,
+  formatWithdrawalOutcomes,
+  getReceiptOutcomes,
   withdrawalMoney,
   type ReceiptEstimate,
 } from "@/lib/withdrawals/presentation";
@@ -26,12 +27,32 @@ export function WithdrawalEstimate({
   ready?: boolean;
   unavailable?: boolean;
 }) {
-  const total = getReceiptTotal(grossUsd, receipt);
-  const partial = total.partial || unavailable;
+  const outcomes = getReceiptOutcomes(grossUsd, receipt);
+  const kind = receipt?.feeCases?.kind;
+  const partial = outcomes.some((outcome) => outcome.partial) || unavailable;
+  const mainAmounts = formatWithdrawalOutcomes(
+    outcomes.map(({ amount }) => amount),
+    kind,
+    (amount) => withdrawalMoney(amount, outcomes[0].currency),
+    "Pendiente de estimar",
+  );
   const converted =
-    ready && primaryRate && total.amount !== null && total.currency === "USD"
-      ? convertUsd(total.amount, primaryRate, operation)
-      : null;
+    ready && primaryRate
+      ? formatWithdrawalOutcomes(
+          outcomes.map(({ amount, currency, result }) =>
+            result?.finalAmount != null &&
+            result.route.currency === primaryRate.currencyCode
+              ? result.finalAmount
+              : amount !== null && currency === "USD"
+                ? convertUsd(amount, primaryRate, operation)
+                : null,
+          ),
+          kind,
+          (amount) =>
+            `${formatCurrency(amount, primaryRate.currencyCode, primaryRate.locale)} ${primaryRate.currencyCode}`,
+          "—",
+        )
+      : "—";
   return (
     <div
       className="income-totals min-w-0 border-b border-zinc-200 pb-5 dark:border-white/10"
@@ -52,24 +73,17 @@ export function WithdrawalEstimate({
       )}
       <div className="min-w-0" data-income="total-usd">
         <p
-          className="income-value text-4xl font-bold leading-tight tabular-nums text-emerald-700 dark:text-emerald-300 sm:text-5xl"
+          className={`income-value font-bold leading-tight tabular-nums text-emerald-700 dark:text-emerald-300 ${outcomes.length > 1 ? "text-2xl sm:text-3xl" : "text-4xl sm:text-5xl"}`}
           data-withdrawal={ready ? (partial ? "partial" : "final") : undefined}
         >
-          {ready
-            ? total.amount !== null
-              ? withdrawalMoney(total.amount, total.currency)
-              : "Pendiente de estimar"
-            : "..."}
+          {ready ? mainAmounts : "..."}
         </p>
       </div>
       {primaryRate?.currencyCode !== "USD" &&
-        total.currency !== primaryRate?.currencyCode && (
+        outcomes[0].currency !== primaryRate?.currencyCode && (
           <div className="mt-2 min-w-0" data-income="converted">
             <p className="income-value text-xl font-semibold leading-snug tabular-nums text-zinc-700 dark:text-zinc-200 sm:text-2xl">
-              ≈{" "}
-              {converted !== null && primaryRate
-                ? `${formatCurrency(converted, primaryRate.currencyCode, primaryRate.locale)} ${primaryRate.currencyCode}`
-                : "—"}
+              ≈ {converted}
             </p>
             <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
               {isLoadingRates
@@ -94,6 +108,19 @@ export function WithdrawalEstimate({
           USD, no garantizada.
         </p>
       )}
+      {ready &&
+        receipt &&
+        (kind || receipt.result.route.receiverCostsUnverified) && (
+          <p className="mt-2 text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+            {kind === "average" &&
+              "Estimación con la comisión promedio relevada. "}
+            {kind === "range" && "Escenarios con la comisión mínima y máxima. "}
+            {kind === "alternatives" &&
+              "Dos comisiones posibles, no acumulables. "}
+            {receipt.result.route.receiverCostsUnverified &&
+              "El destino puede aplicar cargos adicionales."}
+          </p>
+        )}
     </div>
   );
 }

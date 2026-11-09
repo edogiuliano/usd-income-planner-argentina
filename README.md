@@ -8,7 +8,7 @@ Live demo: https://calculadora-ingresos-usd.vercel.app/
 
 - Optional withdrawal simulator inside the salary results, closed by default. The gross salary calculation is unchanged.
 - Verified country/provider/method routes, a read-only fee breakdown, and automatic recommendations when known charges and exchange costs allow a comparison on a common basis.
-- Deel and Payoneer routes are enabled only where documented. Papaya Global is listed with availability pending verification, not invented destinations or fees. Some brand logos require permission and use a generic fallback.
+- Deel is the sole origin. Destinations are filtered by country and account eligibility; Payoneer remains a destination and intermediary. Unconfirmed routes are not offered.
 - No account connections, credentials, or payment execution. Public market rates value the USD equivalent; they do not pretend to be provider execution quotes.
 
 Coverage, sources, API access requirements, asset permissions and remaining limitations: [Withdrawal simulator](docs/withdrawals-v1.2.md).

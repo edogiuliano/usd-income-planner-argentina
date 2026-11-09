@@ -9,7 +9,10 @@ import type {
   WithdrawalStepResult,
 } from "@/types/withdrawals";
 
-const precision = (currency: string) => (currency === "USDc" ? 1e6 : 100);
+const precision = (currency: string) => {
+  if (["USDc", "USDs", "USDC", "USDT"].includes(currency)) return 1e6;
+  return ["BTC", "ETH", "SOL", "DASH"].includes(currency) ? 1e8 : 100;
+};
 export const roundMoney = (amount: number, currency = "USD") =>
   Math.round((amount + Number.EPSILON) * precision(currency)) /
   precision(currency);
@@ -52,7 +55,7 @@ export function isCatalogStale(verifiedAt: string, asOfDate: string) {
   );
 }
 
-export function estimateWithdrawal(input: {
+type WithdrawalInput = {
   grossUsd: number;
   country: CountryCode;
   route: WithdrawalRoute;
@@ -60,11 +63,16 @@ export function estimateWithdrawal(input: {
   scenario?: Partial<WithdrawalScenario>;
   usdValues?: Record<string, number>;
   asOfDate: string;
-}): WithdrawalResult {
+};
+
+export function estimateWithdrawal(input: WithdrawalInput): WithdrawalResult {
   const { route, scenario = {} } = input;
   const stale = isCatalogStale(route.verifiedAt, input.asOfDate);
   const issues: string[] = [];
-  if (!route.countries.includes(input.country))
+  if (
+    route.availability === "unconfirmed" ||
+    !route.countries.includes(input.country)
+  )
     issues.push("La ruta no está verificada para este país.");
   if (!finiteNonnegative(input.grossUsd))
     issues.push("El monto bruto no es válido.");
@@ -108,9 +116,22 @@ export function estimateWithdrawal(input: {
     }
     const manualRule = scenario.fees?.[step.id];
     const manual = manualRule !== undefined;
-    const official = step.feeStatus === "official" && !stale;
+    const official =
+      step.feeStatus === "listed" || (step.feeStatus === "official" && !stale);
     const included = step.feeStatus === "included-in-rate";
-    const rule = manual ? manualRule : official || included ? step.fee : null;
+    const catalogRule =
+      step.feeTiers && before !== null
+        ? (step.feeTiers.find(
+            ({ below, above }) =>
+              (below === undefined || before < below) &&
+              (above === undefined || before > above),
+          )?.fee ?? null)
+        : step.fee;
+    const rule = manual
+      ? manualRule
+      : official || included
+        ? catalogRule
+        : null;
     let fee: number | null = null;
     if (!rule || !isValidFee(rule)) {
       issues.push(
@@ -174,6 +195,7 @@ export function estimateWithdrawal(input: {
       step,
       input: before,
       fee,
+      feeRule: rule,
       feeUsd,
       output: balance,
       rate,
@@ -217,6 +239,33 @@ export function estimateWithdrawal(input: {
     knownFeesUsd: roundMoney(knownFeesUsd),
     totalDiscountUsd,
     fxDifferenceUsd,
+  };
+}
+
+export function estimateWithdrawalCases(input: WithdrawalInput) {
+  const step = input.steps.find((item) => item.variableFee);
+  const tariff = step?.variableFee;
+  if (!step || !tariff || input.scenario?.fees?.[step.id] !== undefined)
+    return null;
+  const amounts =
+    tariff.kind === "range"
+      ? [tariff.min, tariff.max]
+      : tariff.kind === "alternatives"
+        ? tariff.amounts
+        : [tariff.amount];
+  return {
+    kind: tariff.kind,
+    cases: amounts.map((fee) => ({
+      fee,
+      result: estimateWithdrawal({
+        ...input,
+        steps: input.steps.map((item) =>
+          item === step
+            ? { ...item, fee: { fixed: fee }, feeStatus: "listed" }
+            : item,
+        ),
+      }),
+    })),
   };
 }
 

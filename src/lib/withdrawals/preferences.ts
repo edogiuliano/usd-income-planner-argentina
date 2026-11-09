@@ -1,24 +1,18 @@
 import type { CountryCode } from "@/types";
 import type {
   FeeRule,
-  WithdrawalProvider,
   WithdrawalScenario,
   WithdrawalRoute,
 } from "@/types/withdrawals";
-import {
-  withdrawalCatalog,
-  withdrawalProviders,
-} from "@/lib/withdrawals/catalog";
+import { getRouteSteps, withdrawalCatalog } from "@/lib/withdrawals/catalog";
 import { isValidFee } from "@/lib/withdrawals/engine";
 
 export const WITHDRAWAL_STORAGE_KEY = "usd-planner-withdrawals-v1";
 export type WithdrawalPreferences = {
-  provider: WithdrawalProvider;
   selections: Record<string, string>;
   scenarios: Record<string, WithdrawalScenario>;
 };
 export const emptyWithdrawalPreferences = (): WithdrawalPreferences => ({
-  provider: "deel",
   selections: {},
   scenarios: {},
 });
@@ -30,7 +24,7 @@ export function selectedWithdrawalRoute(
   preferences: WithdrawalPreferences,
   country: CountryCode,
 ) {
-  const selected = preferences.selections[`${country}:${preferences.provider}`];
+  const selected = preferences.selections[country];
   if (selected !== undefined)
     return routes.find((route) => route.id === selected) ?? null;
   // Older versions saved edits to the default route without an explicit selection.
@@ -48,9 +42,29 @@ export function restoreWithdrawalPreferences(
   try {
     const value = JSON.parse(raw ?? "null");
     if (!value || typeof value !== "object") return result;
-    if (withdrawalProviders.includes(value.provider))
-      result.provider = value.provider;
+    const countries = new Set(
+      withdrawalCatalog.routes.flatMap((route) => route.countries),
+    );
+    for (const country of countries) {
+      const selected =
+        value.selections?.[country] ?? value.selections?.[`${country}:deel`];
+      if (typeof selected !== "string") continue;
+      const route = withdrawalCatalog.routes.find(
+        (item) =>
+          item.availability !== "unconfirmed" &&
+          item.countries.includes(country) &&
+          (item.id === selected ||
+            (selected === "deel-revolut-br" &&
+              item.id === "deel-revolut-usd" &&
+              country === "br") ||
+            (selected === "deel-swift-usd" &&
+              item.destination === "swift" &&
+              item.group === "usd")),
+      );
+      result.selections[country] = route?.id ?? "";
+    }
     for (const route of withdrawalCatalog.routes) {
+      if (route.availability === "unconfirmed") continue;
       for (const country of route.countries) {
         const key = scenarioKey(country, route.id);
         const stored = value.scenarios?.[key];
@@ -72,9 +86,10 @@ export function restoreWithdrawalPreferences(
               rates[id] = stored.rates[id];
           }
           for (const currency of new Set(
-            withdrawalCatalog.steps
-              .filter((step) => route.steps.includes(step.id))
-              .flatMap((step) => [step.inputCurrency, step.outputCurrency]),
+            getRouteSteps(route).flatMap((step) => [
+              step.inputCurrency,
+              step.outputCurrency,
+            ]),
           )) {
             const rate = stored.usdValues?.[currency];
             if (
@@ -85,13 +100,13 @@ export function restoreWithdrawalPreferences(
             )
               usdValues[currency] = rate;
           }
-          result.scenarios[key] = { fees, rates, usdValues };
+          if (
+            Object.keys(fees).length ||
+            Object.keys(rates).length ||
+            Object.keys(usdValues).length
+          )
+            result.scenarios[key] = { fees, rates, usdValues };
         }
-        const selectionKey = `${country}:${route.provider}`;
-        if (value.selections?.[selectionKey] === "")
-          result.selections[selectionKey] = "";
-        if (value.selections?.[selectionKey] === route.id)
-          result.selections[selectionKey] = route.id;
       }
     }
   } catch {

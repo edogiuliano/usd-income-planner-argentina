@@ -1,6 +1,5 @@
 import type { CountryCode } from "@/types";
 
-export type WithdrawalProvider = "deel" | "payoneer" | "papaya";
 export type FeeRule = {
   percent?: number;
   fixed?: number;
@@ -8,11 +7,15 @@ export type FeeRule = {
   max?: number;
 };
 export type FeeStatus =
-  "official" | "pending" | "conflicting" | "included-in-rate";
+  "official" | "listed" | "pending" | "conflicting" | "included-in-rate";
+export type VariableWithdrawalFee =
+  | { kind: "range"; min: number; max: number }
+  | { kind: "alternatives"; amounts: [number, number] }
+  | { kind: "average"; amount: number };
 export type TariffSource = {
   id: string;
   title: string;
-  url: string;
+  url?: string;
   verifiedAt: string;
   publishedAt?: string;
 };
@@ -22,15 +25,22 @@ export type WithdrawalStep = {
   inputCurrency: string;
   outputCurrency: string;
   fee: FeeRule | null;
+  variableFee?: VariableWithdrawalFee;
+  feeTiers?: { below?: number; above?: number; fee: FeeRule }[];
   feeStatus: FeeStatus;
   sourceIds: string[];
   conditions: string;
   minimumAmount?: number;
   maximumOutput?: number;
+  requiresQuote?: boolean;
 };
 export type WithdrawalRoute = {
   id: string;
-  provider: WithdrawalProvider;
+  availability: "documented" | "eligible" | "unconfirmed";
+  group?: "local" | "usd";
+  receiverCostsUnverified?: boolean;
+  delivery: "bank" | "wallet" | "crypto" | "card";
+  comparisonGroup?: string;
   countries: CountryCode[];
   destination: string;
   currency: string;
@@ -45,8 +55,6 @@ export type ProviderDefinition = {
   id: string;
   name: string;
   logo?: string;
-  helpUrl?: string;
-  availabilityNote?: string;
 };
 export type WithdrawalCatalog = {
   version: number;
@@ -64,6 +72,7 @@ export type WithdrawalStepResult = {
   step: WithdrawalStep;
   input: number | null;
   fee: number | null;
+  feeRule: FeeRule | null;
   feeUsd: number | null;
   output: number | null;
   rate: number | null;
@@ -86,7 +95,6 @@ export type WithdrawalResult = {
 
 // Implementations belong on a server after partner approval and consent, never in the browser.
 export interface WithdrawalQuoteAdapter {
-  readonly provider: WithdrawalProvider;
   quote(input: {
     routeId: string;
     country: CountryCode;
